@@ -1,87 +1,348 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Frank-style Mini Map</title>
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mapbox/mapbox-sdk/umd/mapbox-sdk.min.js"></script>
-    <script src="https://mapbox.github.io/mapbox-gl-language/index.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
-    <link
-      href="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.css"
-      rel="stylesheet"
-    />
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        background: transparent;
-      }
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Frank-style Bottom Overlay</title>
 
-      /* ✅ 프랭크 오버레이용 지도 크기 */
-      #map {
-        width: 300px;
-        height: 250px;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
-      }
+<!-- RealtimeIRL -->
+<script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
 
-      .mapboxgl-ctrl-logo,
-      .mapboxgl-ctrl-attrib,
-      .mapboxgl-ctrl-top-right {
-        display: none !important;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
+<style>
+  :root{
+    --bar-height:56px;
+    --bg: rgba(0,0,0,0.55);
+    --accent: #00e6b8;
+    --muted: #cfd8dc;
+    --white: #fff;
+    --shadow: 0 6px 20px rgba(0,0,0,0.6);
+    --font: "Noto Sans KR", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0;background:transparent;font-family:var(--font);-webkit-font-smoothing:antialiased}
+  /* 바 전체 (하단 고정) */
+  #bottom-bar{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 20px; /* 화면 아래에서 약간 띄움 */
+    height: var(--bar-height);
+    margin: 0 40px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 14px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    color: var(--white);
+    z-index: 9999;
+  }
 
-    <script>
-      const ACCESS_TOKEN =
-        "pk.eyJ1IjoiaG9vbmNvbSIsImEiOiJjbWNjM3R4enUwM3pnMmlxMWJvZTVrMWIzIn0.h_-BNK4FuriEfFWXvE1pmw";
-      const PULL_KEY = "zeoeyze9htbyx455";
+  /* 섹션들: 왼쪽(로고들), 중앙(정보들), 오른쪽(아이콘) */
+  .left, .center, .right { display:flex; align-items:center; gap:12px; }
+  .left { min-width: 220px; }
+  .center { flex:1; justify-content:center; gap:28px; }
+  .right { min-width: 220px; justify-content:flex-end; gap:12px; }
 
-      mapboxgl.accessToken = ACCESS_TOKEN;
+  /* 플랫폼 로고 (간단 SVG/아이콘) */
+  .platforms { display:flex; gap:8px; align-items:center; }
+  .plat {
+    width:34px; height:34px; border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .plat svg { width:18px; height:18px; fill: var(--white); opacity:0.95; }
 
-      // 📍 세종특별시 중심 좌표
-      const sejongCenter = [127.289, 36.48];
+  /* 텍스트 블록 */
+  .info-block { display:flex; flex-direction:column; align-items:center; min-width:140px; }
+  .label { font-size:12px; color:var(--muted); margin-bottom:2px; }
+  .value { font-size:16px; font-weight:700; color:var(--white); }
 
-      const map = new mapboxgl.Map({
-        container: "map",
-        style: "mapbox://styles/mapbox/streets-v12",
-        center: sejongCenter,
-        zoom: 15,
-        interactive: true, // ✅ 마우스로 이동 가능
-        attributionControl: false,
-      });
+  /* 중앙 텍스트 (주행거리 등) */
+  .stat {
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .stat .label{font-size:12px}
+  .stat .value{font-size:18px;font-weight:800;color:var(--white)}
 
-      map.addControl(new MapboxLanguage({ defaultLanguage: "ko" }));
+  /* 오른쪽 소형 아이콘/수치 */
+  .small-box {
+    display:flex; align-items:center; gap:8px;
+    background: rgba(255,255,255,0.04);
+    padding:6px 10px; border-radius:10px; min-width:88px;
+  }
+  .small-value { font-weight:700; font-size:15px; color:var(--white) }
+  .small-label { font-size:11px; color:var(--muted) }
 
-      // ✅ profile.png 마커
-      const el = document.createElement("div");
-      el.style.backgroundImage = 'url("profile.png")';
-      el.style.width = "24px";
-      el.style.height = "24px";
-      el.style.backgroundSize = "cover";
-      el.style.borderRadius = "50%";
-      el.style.border = "2px solid white";
-      el.style.boxShadow = "0 0 8px cyan";
+  /* 연결 표시(신호 세기) - 0..4 */
+  .signal { display:flex; align-items:flex-end; gap:2px; height:18px; }
+  .sig-bar { width:4px; background: rgba(255,255,255,0.16); border-radius:2px; transition:background .2s, height .2s; }
+  .sig-bar.on { background: var(--accent); }
 
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat(sejongCenter)
-        .addTo(map);
+  /* 배터리 */
+  .battery {
+    display:flex; align-items:center; gap:6px;
+  }
+  .battery .cell {
+    width:34px;height:16px;border-radius:3px;border:1px solid rgba(255,255,255,0.18); position:relative; padding:2px;
+    box-sizing:content-box; display:flex; align-items:center;
+  }
+  .battery .level {
+    height:100%; background:var(--accent); width:50%; border-radius:2px; transition:width .5s ease;
+  }
+  .battery .cap { width:4px;height:8px;background:rgba(255,255,255,0.18); border-radius:1px; margin-left:4px; }
 
-      // ✅ 실시간 위치 이동
-      RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
-        if (location.latitude && location.longitude) {
-          marker.setLngLat([location.longitude, location.latitude]);
-          map.panTo([location.longitude, location.latitude], {
-            duration: 1500,
-            easing: (x) => x,
-          });
-        }
-      });
-    </script>
-  </body>
+  /* 반응형 축소(너무 작을 땐 텍스트 축소) */
+  @media (max-width:1000px){
+    .center { gap:12px }
+    .stat .value{font-size:16px}
+  }
+</style>
+</head>
+<body>
+
+  <!-- 하단 바 -->
+  <div id="bottom-bar">
+    <!-- 왼쪽: 플랫폼 로고 -->
+    <div class="left">
+      <div class="platforms">
+        <div class="plat" title="Twitch (치지직)"><svg viewBox="0 0 24 24"><path d="M4 3v14l4 3 3-3h5l5-5V3H4zM18 10h-2v4h-2v-4h-2V6h6v4z"></path></svg></div>
+        <div class="plat" title="YouTube"><svg viewBox="0 0 24 24"><path d="M10 15l5-3-5-3v6z"></path></svg></div>
+        <div class="plat" title="치지직"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"></path></svg></div>
+        <div class="plat" title="SOOP"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM8 11h8v2H8z"></path></svg></div>
+      </div>
+    </div>
+
+    <!-- 중앙: 주행거리 등 주요 정보 -->
+    <div class="center">
+      <div class="stat" style="min-width:160px">
+        <div class="label">이동거리</div>
+        <div class="value" id="distance">0.00 km</div>
+      </div>
+
+      <div class="stat" style="min-width:140px">
+        <div class="label">날씨</div>
+        <div class="value" id="weather">-- °C</div>
+      </div>
+
+      <div class="stat" style="min-width:140px">
+        <div class="label">현재시간</div>
+        <div class="value" id="time">--:--</div>
+      </div>
+    </div>
+
+    <!-- 오른쪽: 신호 / 배터리 / 기타 -->
+    <div class="right">
+      <div class="small-box">
+        <div style="display:flex;flex-direction:column;align-items:flex-start">
+          <div class="small-label">신호</div>
+          <div class="signal" id="signal">
+            <div class="sig-bar" style="height:6px"></div>
+            <div class="sig-bar" style="height:9px"></div>
+            <div class="sig-bar" style="height:12px"></div>
+            <div class="sig-bar" style="height:16px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="small-box">
+        <div style="display:flex;flex-direction:column;align-items:flex-start">
+          <div class="small-label">배터리</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="battery">
+              <div class="cell"><div class="level" id="bat-level" style="width:40%"></div></div>
+              <div class="cap"></div>
+            </div>
+            <div class="small-value" id="bat-text">--%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="small-box">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;margin-right:4px">
+          <div class="small-label">온도(현위치)</div>
+          <div class="small-value" id="temp-text">--°C</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ----------------------------
+  설정: pull key (이미 제공)
+-----------------------------*/
+const PULL_KEY = "zeoeyze9htbyx455";
+
+/* ----------------------------
+  거리 계산 (Haversine)
+-----------------------------*/
+function haversineKm(lat1, lon1, lat2, lon2){
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI/180;
+  const dLon = (lon2 - lon1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+/* ----------------------------
+  RealtimeIRL: 위치 받아서 거리 누적
+  - 세션 변경 시 리셋
+  - GPS 드리프트 완화: 최소 변화(예: 3m) 미만은 무시
+-----------------------------*/
+let prevLoc = null;
+let totalKm = 0;
+const MIN_MOVE_M = 3; // meters threshold (드리프트 방지)
+
+const api = RealtimeIRL.forPullKey(PULL_KEY);
+
+api.addLocationListener(loc=>{
+  // loc 예: {latitude, longitude, accuracy, timestamp}
+  if (!loc || !loc.latitude || !loc.longitude) return;
+
+  if (prevLoc){
+    const kmDelta = haversineKm(prevLoc.latitude, prevLoc.longitude, loc.latitude, loc.longitude);
+    const mDelta = kmDelta * 1000;
+    if (mDelta >= MIN_MOVE_M){
+      totalKm += kmDelta;
+      // 업데이트 UI
+      document.getElementById("distance").textContent = totalKm.toFixed(2) + " km";
+    }
+  } else {
+    // 처음 위치: 초기화(앱 켜질 때부터 시작)
+    totalKm = 0;
+    document.getElementById("distance").textContent = totalKm.toFixed(2) + " km";
+  }
+  prevLoc = loc;
+});
+
+/* reset when session changes */
+api.addSessionIdListener(sessionId=>{
+  // session이 바뀌면 누적 거리 리셋
+  totalKm = 0;
+  prevLoc = null;
+  document.getElementById("distance").textContent = totalKm.toFixed(2) + " km";
+});
+
+/* ----------------------------
+  시간 표시
+-----------------------------*/
+function updateTime(){
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  document.getElementById("time").textContent = `${hh}:${mm}`;
+}
+updateTime();
+setInterval(updateTime, 1000 * 30);
+
+/* ----------------------------
+  배터리 상태 (브라우저 API)
+  - 이 값은 사용자(브라우저) 쪽 정보입니다.
+  - 데스크탑 브라우저는 undefined일 수 있음.
+-----------------------------*/
+function setupBattery(){
+  if (!('getBattery' in navigator)) {
+    document.getElementById("bat-text").textContent = "N/A";
+    return;
+  }
+  navigator.getBattery().then(bat=>{
+    function refresh(){
+      const pct = Math.round(bat.level * 100);
+      document.getElementById("bat-level").style.width = pct + "%";
+      document.getElementById("bat-text").textContent = pct + "%";
+    }
+    bat.addEventListener('levelchange', refresh);
+    bat.addEventListener('chargingchange', refresh);
+    refresh();
+  }).catch(()=>{ document.getElementById("bat-text").textContent = "N/A"; });
+}
+setupBattery();
+
+/* ----------------------------
+  네트워크 신호 (navigator.connection)
+  - 브라우저 지원 시 effectiveType으로 대략 표시
+  - fallback: ping to google (simple approximation) — but we avoid network pings here
+-----------------------------*/
+function updateSignalUI(level){
+  const bars = document.querySelectorAll('#signal .sig-bar');
+  bars.forEach((b,i)=>{
+    if (i < level) b.classList.add('on'); else b.classList.remove('on');
+  });
+}
+function estimateSignal(){
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (!conn) {
+    // 모르면 3/4 정도로 표시
+    updateSignalUI(3);
+    return;
+  }
+  // effectiveType e.g. 'slow-2g','2g','3g','4g'
+  const map = { 'slow-2g':1, '2g':1, '3g':2, '4g':4 };
+  const val = map[conn.effectiveType] || 3;
+  updateSignalUI(val);
+}
+estimateSignal();
+if (navigator.connection){
+  navigator.connection.addEventListener('change', estimateSignal);
+}
+
+/* ----------------------------
+  날씨/온도 표시 (OpenWeatherMap)
+  - 사용할 경우 URL에 ?owm=YOUR_KEY 로 넣어주세요
+  - 예: overlay.html?owm=abc123
+-----------------------------*/
+const params = new URLSearchParams(location.search);
+const OWM_KEY = params.get('owm'); // optional
+
+async function fetchWeatherByLatLon(lat, lon){
+  if (!OWM_KEY) return;
+  try{
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${OWM_KEY}&lang=kr`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('weather fail');
+    const data = await res.json();
+    const t = Math.round(data.main.temp);
+    const desc = data.weather && data.weather[0] ? data.weather[0].description : '';
+    document.getElementById("weather").textContent = `${t}°C ${desc}`;
+    document.getElementById("temp-text").textContent = `${t}°C`;
+  }catch(e){
+    document.getElementById("weather").textContent = "N/A";
+    document.getElementById("temp-text").textContent = "N/A";
+  }
+}
+
+// update weather when location updates (but rate-limit to avoid quotas)
+let lastWeatherAt = 0;
+api.addLocationListener(loc=>{
+  if (!loc || !loc.latitude) return;
+  const now = Date.now();
+  if (!OWM_KEY) return; // no key -> skip
+  // rate-limit: 10 minutes
+  if (now - lastWeatherAt > 1000*60*10){
+    lastWeatherAt = now;
+    fetchWeatherByLatLon(loc.latitude, loc.longitude);
+  }
+});
+
+/* ----------------------------
+  초기화: (optional) request initial weather using first known location via RTIRL
+-----------------------------*/
+api.addLocationListener(loc=>{
+  if (!loc) return;
+  // call once immediately if OWM key present and not fetched recently
+  if (OWM_KEY && !lastWeatherAt){
+    fetchWeatherByLatLon(loc.latitude, loc.longitude);
+    lastWeatherAt = Date.now();
+  }
+});
+
+/* ----------------------------
+  보호: 브라우저 콘솔 로깅 제거(선택)
+-----------------------------*/
+console.log = function(){};
+
+</script>
+</body>
 </html>
