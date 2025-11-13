@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Frank-style Mini Map</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/mapbox-sdk/umd/mapbox-sdk.min.js"></script>
+    <script src="https://mapbox.github.io/mapbox-gl-language/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+      }
+
+      /* ✅ 프랭크 오버레이용 지도 크기 */
+      #map {
+        width: 300px;
+        height: 250px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+      }
+
+      .mapboxgl-ctrl-logo,
+      .mapboxgl-ctrl-attrib,
+      .mapboxgl-ctrl-top-right {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script>
+      const ACCESS_TOKEN =
+        "pk.eyJ1IjoiaG9vbmNvbSIsImEiOiJjbWNjM3R4enUwM3pnMmlxMWJvZTVrMWIzIn0.h_-BNK4FuriEfFWXvE1pmw";
+      const PULL_KEY = "zeoeyze9htbyx455";
+
+      mapboxgl.accessToken = ACCESS_TOKEN;
+
+      // 📍 세종특별시 중심 좌표
+      const sejongCenter = [127.289, 36.48];
+
+      const map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: sejongCenter,
+        zoom: 15,
+        interactive: true, // ✅ 마우스로 이동 가능
+        attributionControl: false,
+      });
+
+      map.addControl(new MapboxLanguage({ defaultLanguage: "ko" }));
+
+      // ✅ profile.png 마커
+      const el = document.createElement("div");
+      el.style.backgroundImage = 'url("profile.png")';
+      el.style.width = "24px";
+      el.style.height = "24px";
+      el.style.backgroundSize = "cover";
+      el.style.borderRadius = "50%";
+      el.style.border = "2px solid white";
+      el.style.boxShadow = "0 0 8px cyan";
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat(sejongCenter)
+        .addTo(map);
+
+      // ✅ 실시간 위치 이동
+      RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
+        if (location.latitude && location.longitude) {
+          marker.setLngLat([location.longitude, location.latitude]);
+          map.panTo([location.longitude, location.latitude], {
+            duration: 1500,
+            easing: (x) => x,
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
