@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>프랭크 오버레이 (GPS 이동거리)</title>
+<script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
 <style>
   html, body {
@@ -100,7 +101,7 @@
 
   <div class="section" id="distance">
     <span class="status-dot connecting"></span>
-    이동거리: 0.0 km
+    이동거리: 0.00 km
   </div>
   <div class="section" id="weather">🌡️ 날씨: --°C</div>
   <div class="section" id="time">🕐 시간: --:--</div>
@@ -116,9 +117,6 @@
 
 </div>
 
-
-<script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
-
 <script>
 /* =========================
     기본 설정
@@ -127,26 +125,24 @@ const PULL_KEY = "zeoeyze9htbyx455";
 const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 
 /* =========================
-    이동거리 계산 관련 변수
+    이동거리 계산 (지도 코드에서 검증된 방식)
 ========================= */
-let prevLocation = null;
 let totalDistance = 0;
-let lastUpdateTime = 0;
-let locationUpdateCount = 0;
-let isConnected = false;
+let previousLocation = null;
 
-/* Haversine 거리 계산 함수 (km 단위) */
-function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
+// Haversine 공식 (지도 코드와 동일)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // 지구 반지름 (미터)
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // 미터 단위로 반환
 }
 
 /* =========================
@@ -154,90 +150,80 @@ function haversine(lat1, lon1, lat2, lon2) {
 ========================= */
 function updateStatus(status) {
   const dot = document.querySelector('.status-dot');
-  dot.className = 'status-dot ' + status;
+  if (dot) {
+    dot.className = 'status-dot';
+    if (status) {
+      dot.classList.add(status);
+    }
+  }
 }
 
 /* =========================
-    GPS 거리 리셋 함수
+    거리 초기화 함수
 ========================= */
 function resetDistance() {
   totalDistance = 0;
-  prevLocation = null;
+  previousLocation = null;
   console.log('거리 초기화됨');
-  document.querySelector("#distance").innerHTML =
-    '<span class="status-dot connecting"></span>이동거리: 0.0 km';
+  updateDistanceDisplay();
 }
 
 /* =========================
     거리 표시 업데이트
 ========================= */
 function updateDistanceDisplay() {
-  document.querySelector("#distance").innerHTML =
-    '<span class="status-dot"></span>이동거리: ' + totalDistance.toFixed(1) + ' km';
+  const distanceEl = document.getElementById('distance');
+  distanceEl.innerHTML = 
+    '<span class="status-dot"></span>이동거리: ' + totalDistance.toFixed(2) + ' km';
   updateStatus('');
 }
 
 /* =========================
-    realtimeIRL GPS 수신
+    RealtimeIRL GPS 수신 (검증된 코드)
 ========================= */
 try {
-  RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((loc) => {
-    const now = Date.now();
-    locationUpdateCount++;
-
-    console.log(`GPS 업데이트 #${locationUpdateCount}:`, loc);
-
-    // GPS가 5초 이상 끊겼다가 다시 들어오면 거리 리셋
-    if (now - lastUpdateTime > 5000 && lastUpdateTime > 0) {
-      console.log('GPS 연결 끊김 감지, 거리 리셋');
-      resetDistance();
-    }
-
-    lastUpdateTime = now;
-    isConnected = true;
-    updateStatus('');
-
-    const { latitude, longitude } = loc;
-
-    if (!latitude || !longitude) {
-      console.warn('유효하지 않은 GPS 데이터:', loc);
-      return;
-    }
-
-    // 이전 좌표가 있을 때 이동 거리 계산
-    if (prevLocation) {
-      const d = haversine(
-        prevLocation.latitude,
-        prevLocation.longitude,
-        latitude,
-        longitude
-      );
-
-      console.log(`이동 거리: ${(d * 1000).toFixed(2)}m`);
-
-      // 정상 범위로 판단되는 이동만 더함 (300m 이하)
-      if (d > 0 && d < 0.3) {
-        totalDistance += d;
-        console.log(`총 거리: ${totalDistance.toFixed(3)} km`);
-      } else if (d >= 0.3) {
-        console.warn(`비정상적인 이동 거리 감지: ${(d * 1000).toFixed(0)}m - 무시됨`);
+  RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
+    console.log('위치 수신:', location);
+    
+    if (location.latitude && location.longitude) {
+      // 이전 위치가 있으면 거리 계산
+      if (previousLocation) {
+        const distance = calculateDistance(
+          previousLocation.latitude, 
+          previousLocation.longitude,
+          location.latitude, 
+          location.longitude
+        );
+        
+        // 미터를 킬로미터로 변환
+        totalDistance += distance / 1000;
+        
+        console.log(`이동: ${distance.toFixed(2)}m, 총: ${totalDistance.toFixed(2)}km`);
       }
+      
+      // 현재 위치 저장
+      previousLocation = location;
+      
+      // 거리 표시 업데이트
+      updateDistanceDisplay();
+      
+      // 상태 업데이트
+      updateStatus('');
+    } else {
+      console.warn('유효하지 않은 위치 데이터');
+      updateStatus('error');
     }
-
-    prevLocation = { latitude, longitude };
-    updateDistanceDisplay();
   });
 
-  console.log('RealtimeIRL 연결 시작됨');
+  console.log('RealtimeIRL 연결 시작');
   updateStatus('connecting');
 
 } catch (error) {
-  console.error('RealtimeIRL 연결 오류:', error);
-  document.querySelector("#distance").innerHTML =
+  console.error('RealtimeIRL 오류:', error);
+  document.getElementById('distance').innerHTML =
     '<span class="status-dot error"></span>이동거리: 연결 실패';
   updateStatus('error');
 }
-
 
 /* =========================
     날씨 업데이트
@@ -264,7 +250,7 @@ async function updateWeather() {
 }
 
 updateWeather();
-setInterval(updateWeather, 600000); // 10분마다 업데이트
+setInterval(updateWeather, 600000); // 10분마다
 
 
 /* =========================
@@ -286,7 +272,7 @@ setInterval(updateTime, 1000);
 
 
 /* =========================
-    배터리 (브라우저/폰 지원 가능 시만)
+    배터리
 ========================= */
 if (navigator.getBattery) {
   navigator.getBattery().then((battery) => {
@@ -306,20 +292,13 @@ if (navigator.getBattery) {
 
 
 /* =========================
-    디버깅 정보 (5초마다)
+    디버깅 (5초마다)
 ========================= */
 setInterval(() => {
-  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 업데이트: ${locationUpdateCount}회 | 연결: ${isConnected ? 'O' : 'X'}`);
+  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 이전위치: ${previousLocation ? 'O' : 'X'}`);
 }, 5000);
 
-
-/* =========================
-    페이지 로드 완료
-========================= */
-window.addEventListener('load', () => {
-  console.log('프랭크 오버레이 로드 완료');
-  console.log('PULL_KEY:', PULL_KEY);
-});
+console.log('프랭크 오버레이 초기화 완료');
 </script>
 
 </body>
