@@ -1,151 +1,199 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="utf-8" />
-    <title>프랭크 오버레이 (지도 없음)</title>
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        font-family: "Pretendard", sans-serif;
-        color: #fff;
-        background: transparent;
-      }
+<head>
+<meta charset="utf-8" />
+<title>프랭크 오버레이 (GPS 이동거리)</title>
 
-      #overlay {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        height: 38px;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 15px;
-        gap: 25px;
-        padding: 0 15px;
-      }
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: "Pretendard", sans-serif;
+    background: transparent;
+    color: white;
+  }
 
-      .section {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
+  /* 하단바 */
+  #overlay {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 38px;
+    background: rgba(0, 0, 0, 0.70);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 25px;
+    font-size: 15px;
+    padding: 0 15px;
+  }
 
-      .icon {
-        height: 20px;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="overlay">
-      <div class="section" id="distance">이동거리: 0.0 km</div>
-      <div class="section" id="weather">날씨: --°C</div>
-      <div class="section" id="time">시간: --:--</div>
-      <div class="section" id="battery">배터리: --%</div>
-    </div>
+  .section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-    <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
+  .icon {
+    height: 20px;
+  }
+</style>
+</head>
 
-    <script>
-      const PULL_KEY = "zeoeyze9htbyx455";
-      const WEATHER_API = "3a4a39b054762e36581605681026ed35";
+<body>
 
-      // 거리 계산 변수
-      let prevLocation = null;
-      let totalDistance = 0;
-      let lastUpdateTime = Date.now();
+<!-- 📌 하단 오버레이 -->
+<div id="overlay">
 
-      function haversine(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = ((lat2 - lat1) * Math.PI) / 180;
-        const dLon = ((lon2 - lon1) * Math.PI) / 180;
-        const a =
-          Math.sin(dLat / 2) ** 2 +
-          Math.cos((lat1 * Math.PI) / 180) *
-            Math.cos((lat2 * Math.PI) / 180) *
-            Math.sin(dLon / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      }
+  <div class="section" id="distance">이동거리: 0.0 km</div>
+  <div class="section" id="weather">날씨: --°C</div>
+  <div class="section" id="time">시간: --:--</div>
+  <div class="section" id="battery">배터리: --%</div>
 
-      // 거리 초기화
-      function resetDistance() {
-        totalDistance = 0;
-        prevLocation = null;
-        document.getElementById("distance").innerText = "이동거리: 0.0 km";
-      }
+  <!-- 플랫폼 로고 -->
+  <div class="section">
+    <img class="icon" src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Twitch_logo_2019.svg" />
+    <img class="icon" src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" />
+    <img class="icon" src="https://cdn-icons-png.flaticon.com/512/3670/3670157.png" />
+    <img class="icon" src="https://cdn-icons-png.flaticon.com/512/5968/5968764.png" />
+  </div>
 
-      // GPS 업데이트 수신
-      RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((loc) => {
-        const now = Date.now();
+</div>
 
-        // --- GPS 재연결 판단 (5초 이상 끊겼다 들어오면 리셋) ---
-        if (now - lastUpdateTime > 5000) {
-          resetDistance();
-        }
 
-        lastUpdateTime = now; // 마지막 GPS 수신 시간 갱신
+<script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
 
-        const { latitude, longitude } = loc;
+<script>
+/* =========================
+    기본 설정
+========================= */
+const PULL_KEY = "zeoeyze9htbyx455";
+const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 
-        if (prevLocation) {
-          const d = haversine(
-            prevLocation.latitude,
-            prevLocation.longitude,
-            latitude,
-            longitude
-          );
+/* =========================
+    이동거리 계산 관련 변수
+========================= */
+let prevLocation = null;
+let totalDistance = 0;
+let lastUpdateTime = 0;
 
-          // 비정상 GPS 튐 방지
-          if (d > 0 && d < 0.5) {
-            totalDistance += d;
-          }
-        }
+/* Haversine 거리 계산 함수 (km 단위) */
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
 
-        prevLocation = { latitude, longitude };
-        document.getElementById("distance").innerText =
-          "이동거리: " + totalDistance.toFixed(1) + " km";
-      });
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
-      // --- 날씨 ---
-      async function updateWeather() {
-        const url =
-          "https://api.openweathermap.org/data/2.5/weather?q=Sejong,KR&appid=" +
-          WEATHER_API +
-          "&units=metric&lang=kr";
+/* =========================
+    GPS 거리 리셋 함수
+========================= */
+function resetDistance() {
+  totalDistance = 0;
+  prevLocation = null;
+  document.getElementById("distance").innerText =
+    "이동거리: 0.0 km";
+}
 
-        const res = await fetch(url);
-        const data = await res.json();
+/* =========================
+    realtimeIRL GPS 수신
+========================= */
+RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((loc) => {
 
-        document.getElementById("weather").innerText =
-          "날씨: " + Math.round(data.main.temp) + "°C";
-      }
-      updateWeather();
-      setInterval(updateWeather, 600000);
+  const now = Date.now();
 
-      // --- 시간 표시 ---
-      function updateTime() {
-        const now = new Date();
-        let hours = now.getHours();
-        const minutes = now.getMinutes().toString().padStart(2, "0");
-        const ampm = hours >= 12 ? "오후" : "오전";
-        hours = hours % 12 || 12;
-        document.getElementById("time").innerText =
-          "시간: " + ampm + " " + hours + ":" + minutes;
-      }
-      setInterval(updateTime, 1000);
-      updateTime();
+  // GPS가 5초 이상 끊겼다가 다시 들어오면 거리 리셋
+  if (now - lastUpdateTime > 5000) {
+    resetDistance();
+  }
 
-      // --- 배터리 ---
-      navigator.getBattery?.().then((battery) => {
-        function updateBattery() {
-          document.getElementById("battery").innerText =
-            "배터리: " + Math.round(battery.level * 100) + "%";
-        }
-        battery.addEventListener("levelchange", updateBattery);
-        updateBattery();
-      });
-    </script>
-  </body>
+  lastUpdateTime = now;
+
+  const { latitude, longitude } = loc;
+
+  // 이전 좌표가 있을 때 이동 거리 계산
+  if (prevLocation) {
+    const d = haversine(
+      prevLocation.latitude,
+      prevLocation.longitude,
+      latitude,
+      longitude
+    );
+
+    // 정상 범위로 판단되는 이동만 더함 (300m 이하)
+    if (d > 0 && d < 0.3) {
+      totalDistance += d;
+    }
+  }
+
+  prevLocation = { latitude, longitude };
+
+  document.getElementById("distance").innerText =
+    "이동거리: " + totalDistance.toFixed(1) + " km";
+});
+
+
+/* =========================
+    날씨 업데이트
+========================= */
+async function updateWeather() {
+  const url =
+    "https://api.openweathermap.org/data/2.5/weather?q=Sejong,KR&appid=" +
+    WEATHER_API +
+    "&units=metric&lang=kr";
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    document.getElementById("weather").innerText =
+      "날씨: " + Math.round(data.main.temp) + "°C";
+  } catch (e) {
+    document.getElementById("weather").innerText = "날씨: --°C";
+  }
+}
+
+updateWeather();
+setInterval(updateWeather, 600000);
+
+
+/* =========================
+    시간 (오전/오후)
+========================= */
+function updateTime() {
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "오후" : "오전";
+  hours = hours % 12 || 12;
+
+  document.getElementById("time").innerText =
+    "시간: " + ampm + " " + hours + ":" + minutes;
+}
+
+updateTime();
+setInterval(updateTime, 1000);
+
+
+/* =========================
+    배터리 (브라우저/폰 지원 가능 시만)
+========================= */
+navigator.getBattery?.().then((battery) => {
+  function updateBattery() {
+    document.getElementById("battery").innerText =
+      "배터리: " + Math.round(battery.level * 100) + "%";
+  }
+  battery.addEventListener("levelchange", updateBattery);
+  updateBattery();
+});
+</script>
+
+</body>
 </html>
