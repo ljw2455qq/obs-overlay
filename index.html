@@ -129,6 +129,8 @@ const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 ========================= */
 let totalDistance = 0;
 let previousLocation = null;
+let lastUpdateTime = 0;
+const GPS_TIMEOUT = 10000; // 10초 동안 신호 없으면 리셋
 
 // Haversine 공식 (지도 코드와 동일)
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -183,7 +185,16 @@ function updateDistanceDisplay() {
 ========================= */
 try {
   RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
+    const now = Date.now();
     console.log('위치 수신:', location);
+    
+    // GPS 신호가 10초 이상 끊겼다가 다시 들어오면 리셋
+    if (lastUpdateTime > 0 && (now - lastUpdateTime) > GPS_TIMEOUT) {
+      console.log('⚠️ GPS 신호 끊김 감지 - 거리 리셋');
+      resetDistance();
+    }
+    
+    lastUpdateTime = now;
     
     if (location.latitude && location.longitude) {
       // 이전 위치가 있으면 거리 계산
@@ -224,6 +235,26 @@ try {
     '<span class="status-dot error"></span>이동거리: 연결 실패';
   updateStatus('error');
 }
+
+/* =========================
+    GPS 신호 체크 (1초마다)
+========================= */
+setInterval(() => {
+  if (lastUpdateTime > 0) {
+    const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+    
+    if (timeSinceLastUpdate > GPS_TIMEOUT) {
+      console.log('⚠️ GPS 신호 없음 - 거리 리셋');
+      resetDistance();
+      lastUpdateTime = 0; // 다시 체크하지 않도록
+      updateStatus('error');
+      
+      const distanceEl = document.getElementById('distance');
+      distanceEl.innerHTML = 
+        '<span class="status-dot error"></span>이동거리: GPS 신호 없음';
+    }
+  }
+}, 1000);
 
 /* =========================
     날씨 업데이트
@@ -295,7 +326,8 @@ if (navigator.getBattery) {
     디버깅 (5초마다)
 ========================= */
 setInterval(() => {
-  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 이전위치: ${previousLocation ? 'O' : 'X'}`);
+  const timeSinceUpdate = lastUpdateTime > 0 ? Math.floor((Date.now() - lastUpdateTime) / 1000) : 0;
+  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 이전위치: ${previousLocation ? 'O' : 'X'} | 마지막 업데이트: ${timeSinceUpdate}초 전`);
 }, 5000);
 
 console.log('프랭크 오버레이 초기화 완료');
