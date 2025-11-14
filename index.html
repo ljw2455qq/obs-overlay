@@ -59,76 +59,109 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
 
-    <script>
-      const PULL_KEY = "zeoeyze9htbyx455";
-      const WEATHER_API = "3a4a39b054762e36581605681026ed35";
+<script>
+const PULL_KEY = "zeoeyze9htbyx455";
+const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 
-      /* ===============================
-          이동거리 및 GPS 신호 감지
-      =============================== */
-      let prevLocation = null;
-      let totalDistance = 0;
+/* 이동거리 */
+let prevLocation = null;
+let totalDistance = 0;
 
-      // GPS 끊김 감지용
-      let lastUpdateTime = Date.now();
-      let gpsLost = false; // 지금 GPS 신호가 끊긴 상태인지
+/* GPS 신호 감지 */
+let gpsLost = false;
+let lastTimestamp = 0;
+let lastLat = null;
+let lastLon = null;
+let stillCount = 0; // 이동 없음 카운트
 
-      // GPS 좌표 거리 계산 함수
-      function haversine(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = ((lat2 - lat1) * Math.PI) / 180;
-        const dLon = ((lon2 - lon1) * Math.PI) / 180;
-        const a =
-          Math.sin(dLat / 2) ** 2 +
-          Math.cos((lat1 * Math.PI) / 180) *
-            Math.cos((lat2 * Math.PI) / 180) *
-            Math.sin(dLon / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      }
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
-      // GPS 신호 모니터링 (10초 동안 신호 없으면 끊김 처리)
-      setInterval(() => {
-        if (Date.now() - lastUpdateTime > 10000 && gpsLost === false) {
-          gpsLost = true;
-          document.getElementById("signal").innerText = "신호: 🔴 (GPS 끊김)";
-        }
-      }, 2000);
+RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((loc) => {
+  const { latitude, longitude, speed, accuracy, timestamp } = loc;
 
-      // realtimeirl 위치 수신
-      RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((loc) => {
-        const { latitude, longitude } = loc;
+  /* =====================
+      GPS OFF 감지 조건
+     ===================== */
 
-        // GPS 신호가 다시 들어온 순간
-        if (gpsLost === true) {
-          gpsLost = false;
-          totalDistance = 0; // 자동 리셋
-          prevLocation = null;
-          document.getElementById("distance").innerText = "이동거리: 0.0 km";
-          document.getElementById("signal").innerText = "신호: 🟢 (복구)";
-        } else {
-          document.getElementById("signal").innerText = "신호: 🟢";
-        }
+  let gpsShouldBeLost = false;
 
-        lastUpdateTime = Date.now(); // 마지막 신호 시간 갱신
+  // 1) 정확도가 100m 이상이면 GPS가 꺼졌거나 신호가 매우 나쁨
+  if (accuracy > 100) gpsShouldBeLost = true;
 
-        // 거리 계산
-        if (prevLocation) {
-          const d = haversine(
-            prevLocation.latitude,
-            prevLocation.longitude,
-            latitude,
-            longitude
-          );
+  // 2) timestamp 변화 없음 → 위치값이 갱신되지 않음
+  if (timestamp === lastTimestamp) gpsShouldBeLost = true;
 
-          // 너무 큰 값 튀면 무효
-          if (d < 0.5) totalDistance += d;
-        }
+  // 3) 5초 동안 speed 0 + 위치 변화 거의 없으면 GPS OFF 가능성 높음
+  if (lastLat !== null && lastLon !== null) {
+    const moved = haversine(lastLat, lastLon, latitude, longitude);
+    if (moved < 0.005 && speed === 0) {
+      stillCount++;
+      if (stillCount >= 5) gpsShouldBeLost = true;
+    } else {
+      stillCount = 0;
+    }
+  }
 
-        prevLocation = { latitude, longitude };
+  /* =====================
+      GPS OFF → ON 복구
+     ===================== */
+  if (gpsLost && !gpsShouldBeLost) {
+    totalDistance = 0;
+    prevLocation = null;
 
-        document.getElementById("distance").innerText =
-          "이동거리: " + totalDistance.toFixed(1) + " km";
-      });
+    document.getElementById("distance").innerText =
+      "이동거리: 0.0 km";
+    document.getElementById("signal").innerText = "신호: 🟢 (복구)";
+  }
+
+  /* GPS 상태 업데이트 */
+  gpsLost = gpsShouldBeLost;
+
+  if (gpsLost) {
+    document.getElementById("signal").innerText = "신호: 🔴 (GPS OFF)";
+    lastTimestamp = timestamp;
+    lastLat = latitude;
+    lastLon = longitude;
+    return; // 거리 계산 중단
+  } else {
+    document.getElementById("signal").innerText = "신호: 🟢";
+  }
+
+  /* =====================
+       거리 누적
+     ===================== */
+  if (prevLocation) {
+    const d = haversine(
+      prevLocation.latitude,
+      prevLocation.longitude,
+      latitude,
+      longitude
+    );
+
+    // 급발진 튀는 값 제외
+    if (d < 0.5) totalDistance += d;
+  }
+
+  prevLocation = { latitude, longitude };
+  lastLat = latitude;
+  lastLon = longitude;
+  lastTimestamp = timestamp;
+
+  document.getElementById("distance").innerText =
+    "이동거리: " + totalDistance.toFixed(1) + " km";
+});
+</script>
+
 
       /* ===============================
           날씨 (세종)
