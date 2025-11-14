@@ -1,111 +1,113 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <title>프랭크 오버레이 (GPS 이동거리)</title>
-  <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: transparent;
-      color: white;
-    }
+<meta charset="utf-8" />
+<title>프랭크 오버레이 (GPS 이동거리)</title>
+<script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
-    /* 하단바 */
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: transparent;
+    color: white;
+  }
+
+  /* 하단바 */
+  #overlay {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 38px;
+    background: rgba(0, 0, 0, 0.70);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 25px;
+    font-size: 15px;
+    padding: 0 15px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .icon {
+    height: 20px;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+  }
+
+  .icon:hover {
+    opacity: 1;
+  }
+
+  /* 거리 강조 */
+  #distance {
+    font-weight: 600;
+    color: #00ff88;
+    text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+  }
+
+  /* 상태 표시 */
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4CAF50;
+    display: inline-block;
+    margin-right: 4px;
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.connecting {
+    background: #FF9800;
+  }
+
+  .status-dot.error {
+    background: #F44336;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+
+  /* 반응형 */
+  @media (max-width: 768px) {
     #overlay {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      height: 38px;
-      background: rgba(0, 0, 0, 0.70);
-      backdrop-filter: blur(5px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 25px;
-      font-size: 15px;
-      padding: 0 15px;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+      gap: 15px;
+      font-size: 13px;
     }
-
-    .section {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-    }
-
-    /* 로고 크기 완전 동일 */
     .icon {
-      width: 28px !important;
-      height: auto !important;
-      opacity: 0.9;
-      transition: opacity 0.3s ease;
-      object-fit: contain;
-      vertical-align: middle;
+      height: 18px;
     }
-    .icon:hover {
-      opacity: 1;
-    }
-
-    /* 로고 사이 간격 */
-    .section img + img {
-      margin-left: 8px;
-    }
-
-    /* 거리 강조 */
-    #distance {
-      font-weight: 600;
-      color: #00ff88;
-      text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
-    }
-
-    /* 상태 도트 */
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #4CAF50;
-      display: inline-block;
-      margin-right: 4px;
-      animation: pulse 2s infinite;
-    }
-    .status-dot.connecting { background: #FF9800; }
-    .status-dot.error { background: #F44336; }
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-
-    /* 반응형 */
-    @media (max-width: 768px) {
-      #overlay {
-        gap: 15px;
-        font-size: 13px;
-      }
-      .icon {
-        width: 24px !important;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
+
 <body>
 
-<!-- 하단 오버레이 -->
+<!-- 📌 하단 오버레이 -->
 <div id="overlay">
+
   <div class="section" id="distance">
     <span class="status-dot connecting"></span>
     이동거리: 0.00 km
   </div>
-  <div class="section" id="weather">날씨: --°C</div>
-  <div class="section" id="time">시간: --:--</div>
-  <div class="section" id="battery">배터리: --%</div>
+  <div class="section" id="weather">🌡️ 날씨: --°C</div>
+  <div class="section" id="time">🕐 시간: --:--</div>
+  <div class="section" id="battery">🔋 배터리: --%</div>
 
-  <!-- 플랫폼 로고 (4개 모두 동일 크기) -->
+<!-- 플랫폼 로고 (GitHub Raw URL - 4개) -->
   <div class="section">
     <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png" alt="숲" title="숲" />
     <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png" alt="치지직" title="치지직" />
@@ -122,150 +124,213 @@ const PULL_KEY = "zeoeyze9htbyx455";
 const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 
 /* =========================
-    이동거리 계산
+    이동거리 계산 (지도 코드에서 검증된 방식)
 ========================= */
 let totalDistance = 0;
 let previousLocation = null;
 let lastUpdateTime = 0;
-const GPS_TIMEOUT = 10000;
+const GPS_TIMEOUT = 10000; // 10초 동안 신호 없으면 리셋
 
+// Haversine 공식 (지도 코드와 동일)
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
+  const R = 6371e3; // 지구 반지름 (미터)
   const φ1 = lat1 * Math.PI / 180;
   const φ2 = lat2 * Math.PI / 180;
   const Δφ = (lat2 - lat1) * Math.PI / 180;
   const Δλ = (lon2 - lon1) * Math.PI / 180;
+
   const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
             Math.cos(φ1) * Math.cos(φ2) *
             Math.sin(Δλ/2) * Math.sin(Δλ/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+  return R * c; // 미터 단위로 반환
 }
 
 /* =========================
-    상태 업데이트
+    상태 표시 업데이트
 ========================= */
 function updateStatus(status) {
   const dot = document.querySelector('.status-dot');
   if (dot) {
     dot.className = 'status-dot';
-    if (status) dot.classList.add(status);
+    if (status) {
+      dot.classList.add(status);
+    }
   }
 }
+
+/* =========================
+    거리 초기화 함수
+========================= */
 function resetDistance() {
   totalDistance = 0;
   previousLocation = null;
   console.log('거리 초기화됨');
   updateDistanceDisplay();
 }
+
+/* =========================
+    거리 표시 업데이트
+========================= */
 function updateDistanceDisplay() {
-  const el = document.getElementById('distance');
-  el.innerHTML = '<span class="status-dot"></span>이동거리: ' + totalDistance.toFixed(2) + ' km';
+  const distanceEl = document.getElementById('distance');
+  distanceEl.innerHTML = 
+    '<span class="status-dot"></span>이동거리: ' + totalDistance.toFixed(2) + ' km';
   updateStatus('');
 }
 
 /* =========================
-    RealtimeIRL GPS
+    RealtimeIRL GPS 수신 (검증된 코드)
 ========================= */
 try {
   RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
     const now = Date.now();
+    console.log('위치 수신:', location);
+    
+    // GPS 신호가 10초 이상 끊겼다가 다시 들어오면 리셋
     if (lastUpdateTime > 0 && (now - lastUpdateTime) > GPS_TIMEOUT) {
-      console.log('GPS 신호 끊김 → 리셋');
+      console.log('⚠️ GPS 신호 끊김 감지 - 거리 리셋');
       resetDistance();
     }
+    
     lastUpdateTime = now;
-
+    
     if (location.latitude && location.longitude) {
+      // 이전 위치가 있으면 거리 계산
       if (previousLocation) {
-        const dist = calculateDistance(
-          previousLocation.latitude, previousLocation.longitude,
-          location.latitude, location.longitude
+        const distance = calculateDistance(
+          previousLocation.latitude, 
+          previousLocation.longitude,
+          location.latitude, 
+          location.longitude
         );
-        totalDistance += dist / 1000;
+        
+        // 미터를 킬로미터로 변환
+        totalDistance += distance / 1000;
+        
+        console.log(`이동: ${distance.toFixed(2)}m, 총: ${totalDistance.toFixed(2)}km`);
       }
+      
+      // 현재 위치 저장
       previousLocation = location;
+      
+      // 거리 표시 업데이트
       updateDistanceDisplay();
+      
+      // 상태 업데이트
       updateStatus('');
     } else {
+      console.warn('유효하지 않은 위치 데이터');
       updateStatus('error');
     }
   });
+
+  console.log('RealtimeIRL 연결 시작');
   updateStatus('connecting');
-} catch (e) {
-  console.error('RealtimeIRL 오류:', e);
-  document.getElementById('distance').innerHTML = '<span class="status-dot error"></span>이동거리: 연결 실패';
+
+} catch (error) {
+  console.error('RealtimeIRL 오류:', error);
+  document.getElementById('distance').innerHTML =
+    '<span class="status-dot error"></span>이동거리: 연결 실패';
   updateStatus('error');
 }
 
-/* GPS 신호 체크 */
+/* =========================
+    GPS 신호 체크 (1초마다)
+========================= */
 setInterval(() => {
-  if (lastUpdateTime > 0 && (Date.now() - lastUpdateTime) > GPS_TIMEOUT) {
-    resetDistance();
-    lastUpdateTime = 0;
-    updateStatus('error');
-    document.getElementById('distance').innerHTML = '<span class="status-dot error"></span>이동거리: GPS 신호 없음';
+  if (lastUpdateTime > 0) {
+    const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+    
+    if (timeSinceLastUpdate > GPS_TIMEOUT) {
+      console.log('⚠️ GPS 신호 없음 - 거리 리셋');
+      resetDistance();
+      lastUpdateTime = 0; // 다시 체크하지 않도록
+      updateStatus('error');
+      
+      const distanceEl = document.getElementById('distance');
+      distanceEl.innerHTML = 
+        '<span class="status-dot error"></span>이동거리: GPS 신호 없음';
+    }
   }
 }, 1000);
 
 /* =========================
-    날씨 (세종시)
+    날씨 업데이트
 ========================= */
 async function updateWeather() {
+  const url =
+    "https://api.openweathermap.org/data/2.5/weather?q=Sejong,KR&appid=" +
+    WEATHER_API +
+    "&units=metric&lang=kr";
+
   try {
-    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=Sejong,KR&appid=${WEATHER_API}&units=metric&lang=kr`);
+    const res = await fetch(url);
     const data = await res.json();
+
     const temp = Math.round(data.main.temp);
-    const desc = data.weather[0]?.description || '';
-    document.getElementById("weather").innerHTML = `날씨: ${temp}°C ${desc}`;
+    const description = data.weather[0]?.description || '';
+    
+    document.getElementById("weather").innerHTML =
+      `🌡️ 날씨: ${temp}°C ${description}`;
   } catch (e) {
-    document.getElementById("weather").innerHTML = "날씨: --°C";
+    console.error('날씨 업데이트 실패:', e);
+    document.getElementById("weather").innerHTML = "🌡️ 날씨: --°C";
   }
 }
+
 updateWeather();
-setInterval(updateWeather, 600000);
+setInterval(updateWeather, 600000); // 10분마다
+
 
 /* =========================
     시간 (오전/오후)
 ========================= */
 function updateTime() {
   const now = new Date();
-  let h = now.getHours();
-  const m = now.getMinutes().toString().padStart(2, "0");
-  const ampm = h >= 12 ? "오후" : "오전";
-  h = h % 12 || 12;
-  document.getElementById("time").innerHTML = `시간: ${ampm} ${h}:${m}`;
+  let hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "오후" : "오전";
+  hours = hours % 12 || 12;
+
+  document.getElementById("time").innerHTML =
+    "🕐 시간: " + ampm + " " + hours + ":" + minutes;
 }
+
 updateTime();
 setInterval(updateTime, 1000);
+
 
 /* =========================
     배터리
 ========================= */
 if (navigator.getBattery) {
-  navigator.getBattery().then(battery => {
-    function update() {
+  navigator.getBattery().then((battery) => {
+    function updateBattery() {
       const level = Math.round(battery.level * 100);
-      const icon = battery.charging ? '충전 중' : '배터리';
-      document.getElementById("battery").innerHTML = `${icon}: ${level}%`;
+      const charging = battery.charging ? '⚡' : '🔋';
+      document.getElementById("battery").innerHTML =
+        charging + " 배터리: " + level + "%";
     }
-    battery.addEventListener("levelchange", update);
-    battery.addEventListener("chargingchange", update);
-    update();
+    battery.addEventListener("levelchange", updateBattery);
+    battery.addEventListener("chargingchange", updateBattery);
+    updateBattery();
   });
 } else {
-  document.getElementById("battery").innerHTML = "배터리: N/A";
+  document.getElementById("battery").innerHTML = "🔋 배터리: N/A";
 }
 
+
 /* =========================
-    디버깅
+    디버깅 (5초마다)
 ========================= */
 setInterval(() => {
-  const ago = lastUpdateTime > 0 ? Math.floor((Date.now() - lastUpdateTime)/1000) : 0;
-  console.log(`[상태] 거리: ${totalDistance.toFixed(3)}km | 업데이트: ${ago}초 전`);
+  const timeSinceUpdate = lastUpdateTime > 0 ? Math.floor((Date.now() - lastUpdateTime) / 1000) : 0;
+  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 이전위치: ${previousLocation ? 'O' : 'X'} | 마지막 업데이트: ${timeSinceUpdate}초 전`);
 }, 5000);
 
 console.log('프랭크 오버레이 초기화 완료');
 </script>
+
 </body>
 </html>
