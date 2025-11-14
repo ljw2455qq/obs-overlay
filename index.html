@@ -39,6 +39,7 @@
       }
     </style>
   </head>
+
   <body>
     <!-- 하단 정보바 -->
     <div id="overlay">
@@ -47,6 +48,7 @@
       <div class="section" id="time">시간: --:--</div>
       <div class="section" id="battery">배터리: --%</div>
       <div class="section" id="signal">신호: ✅</div>
+
       <div class="section">
         <img class="icon" src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Twitch_logo_2019.svg" />
         <img class="icon" src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" />
@@ -56,13 +58,18 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
+
     <script>
       const PULL_KEY = "zeoeyze9htbyx455";
       const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 
-      // 이동거리 계산용
+      /* ------------------------------
+          이동거리 계산
+      ------------------------------ */
       let prevLocation = null;
       let totalDistance = 0;
+      const GPS_RESET_THRESHOLD = 0.3; // 300m 이상 튀면 GPS 재시작 → 거리 초기화
+
       function haversine(lat1, lon1, lat2, lon2) {
         const R = 6371;
         const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -75,9 +82,9 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       }
 
-      // realtimeirl 위치 업데이트
       RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((loc) => {
         const { latitude, longitude } = loc;
+
         if (prevLocation) {
           const d = haversine(
             prevLocation.latitude,
@@ -85,41 +92,69 @@
             latitude,
             longitude
           );
-          if (d < 0.5) totalDistance += d;
+
+          // GPS 튐 감지 (300m 이상 → GPS OFF/ON으로 판단)
+          if (d > GPS_RESET_THRESHOLD) {
+            totalDistance = 0; // 리셋
+            prevLocation = { latitude, longitude };
+            document.getElementById("distance").innerText =
+              "이동거리: 0.0 km";
+            return;
+          }
+
+          // 정상 이동만 누적 (0.5km 이상 튀면 무효 처리)
+          if (d < 0.5) {
+            totalDistance += d;
+          }
         }
+
         prevLocation = { latitude, longitude };
+
         document.getElementById("distance").innerText =
           "이동거리: " + totalDistance.toFixed(1) + " km";
       });
 
-      // 날씨
+      /* ------------------------------
+          날씨 (세종)
+      ------------------------------ */
       async function updateWeather() {
         const url =
           "https://api.openweathermap.org/data/2.5/weather?q=Sejong,KR&appid=" +
           WEATHER_API +
           "&units=metric&lang=kr";
-        const res = await fetch(url);
-        const data = await res.json();
-        document.getElementById("weather").innerText =
-          "날씨: " + Math.round(data.main.temp) + "°C";
+
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          document.getElementById("weather").innerText =
+            "날씨: " + Math.round(data.main.temp) + "°C";
+        } catch (e) {
+          document.getElementById("weather").innerText = "날씨: --°C";
+        }
       }
       updateWeather();
       setInterval(updateWeather, 600000);
 
-      // 시간 (오전/오후)
+      /* ------------------------------
+          시간 (오전/오후)
+      ------------------------------ */
       function updateTime() {
         const now = new Date();
         let hours = now.getHours();
         const minutes = now.getMinutes().toString().padStart(2, "0");
+
         const ampm = hours >= 12 ? "오후" : "오전";
         hours = hours % 12 || 12;
+
         document.getElementById("time").innerText =
           "시간: " + ampm + " " + hours + ":" + minutes;
       }
       setInterval(updateTime, 1000);
       updateTime();
 
-      // 배터리 표시
+      /* ------------------------------
+          배터리
+      ------------------------------ */
       navigator.getBattery?.().then((battery) => {
         function updateBattery() {
           document.getElementById("battery").innerText =
