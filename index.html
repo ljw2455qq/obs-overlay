@@ -2,8 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<title>프랭크 오버레이 (GPS 이동거리)</title>
+<title>프랭크 오버레이 (GPS + 수익)</title>
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <style>
   html, body {
@@ -20,16 +22,17 @@
     position: fixed;
     bottom: 0;
     width: 100%;
-    height: 38px;
+    min-height: 38px;
     background: rgba(0, 0, 0, 0.70);
     backdrop-filter: blur(5px);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 25px;
+    gap: 20px;
     font-size: 15px;
-    padding: 0 15px;
+    padding: 8px 15px;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    flex-wrap: wrap;
   }
 
   .section {
@@ -55,6 +58,30 @@
     color: #00ff88;
     text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
   }
+
+  /* 수익 데이터 스타일 */
+  .revenue-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .revenue-label {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  .revenue-value {
+    font-weight: 700;
+    color: #ffd700;
+  }
+
+  #daily-value { color: #4CAF50; }
+  #weekly-value { color: #2196F3; }
+  #monthly-value { color: #FF9800; }
 
   /* 상태 표시 */
   .status-dot {
@@ -84,11 +111,15 @@
   /* 반응형 */
   @media (max-width: 768px) {
     #overlay {
-      gap: 15px;
+      gap: 12px;
       font-size: 13px;
+      padding: 6px 10px;
     }
     .icon {
-      height: 18px;
+      height: 16px;
+    }
+    .revenue-item {
+      padding: 2px 6px;
     }
   }
 </style>
@@ -99,15 +130,36 @@
 <!-- 📌 하단 오버레이 -->
 <div id="overlay">
 
-  <div class="section" id="distance">
+  <!-- GPS 이동거리 섹션 -->
+  <div class="section" id="distance-section">
     <span class="status-dot connecting"></span>
-    이동거리: 0.00 km
+    <span id="distance">이동거리: 0.00 km</span>
   </div>
+
+  <!-- 수익 데이터 섹션 (Firebase) -->
+  <div class="section revenue-item">
+    <span class="revenue-label">일</span>
+    <span class="revenue-value" id="daily-value">0</span>
+  </div>
+  <div class="section revenue-item">
+    <span class="revenue-label">월</span>
+    <span class="revenue-value" id="weekly-value">0</span>
+  </div>
+  <div class="section revenue-item">
+    <span class="revenue-label">년</span>
+    <span class="revenue-value" id="monthly-value">0</span>
+  </div>
+
+  <!-- 날씨 섹션 -->
   <div class="section" id="weather">🌡️ 날씨: --°C</div>
+  
+  <!-- 시간 섹션 -->
   <div class="section" id="time">🕐 시간: --:--</div>
+  
+  <!-- 배터리 섹션 -->
   <div class="section" id="battery">🔋 배터리: --%</div>
 
-<!-- 플랫폼 로고 (GitHub Raw URL - 4개) -->
+  <!-- 플랫폼 로고 섹션 -->
   <div class="section">
     <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png" alt="숲" title="숲" />
     <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png" alt="치지직" title="치지직" />
@@ -118,20 +170,80 @@
 
 <script>
 /* =========================
+    Firebase 설정
+========================= */
+// Firebase 구성 정보를 여기에 입력하세요
+const firebaseConfig = {
+    apiKey: "AIzaSyA5hMmN9QFgdFtaA5gicS_pj-blu_jJdvE",
+    authDomain: "rider-bf48b.firebaseapp.com",
+    databaseURL: "https://rider-bf48b-default-rtdb.firebaseio.com",
+    projectId: "rider-bf48b",
+    storageBucket: "rider-bf48b.firebasestorage.app",
+    messagingSenderId: "1026929653322",
+    appId: "1:1026929653322:web:b90541cccba5b4186198b3"
+};
+
+// Firebase 초기화
+let db;
+try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    console.log('Firebase 연결 성공');
+} catch (error) {
+    console.error('Firebase 초기화 실패:', error);
+}
+
+/* =========================
+    Firebase 데이터 가져오기
+========================= */
+function loadRevenueData() {
+    if (!db) {
+        console.error('Firebase가 초기화되지 않았습니다');
+        return;
+    }
+
+    db.ref('overlayData').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            document.getElementById('daily-value').textContent = 
+                data.daily ? formatRevenue(data.daily) : '0';
+            document.getElementById('weekly-value').textContent = 
+                data.weekly ? formatRevenue(data.weekly) : '0';
+            document.getElementById('monthly-value').textContent = 
+                data.monthly ? formatRevenue(data.monthly) : '0';
+            
+            console.log('수익 데이터 업데이트:', data);
+        }
+    }, (error) => {
+        console.error('Firebase 데이터 로드 실패:', error);
+    });
+}
+
+// 수익 데이터 포맷팅 (원화 표시)
+function formatRevenue(value) {
+    // 숫자만 추출
+    const num = parseInt(value.toString().replace(/[^0-9]/g, ''));
+    if (isNaN(num)) return value;
+    
+    // 천 단위 콤마 추가
+    return num.toLocaleString() + '원';
+}
+
+/* =========================
     기본 설정
 ========================= */
 const PULL_KEY = "zeoeyze9htbyx455";
 const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 
 /* =========================
-    이동거리 계산 (지도 코드에서 검증된 방식)
+    이동거리 계산
 ========================= */
 let totalDistance = 0;
 let previousLocation = null;
 let lastUpdateTime = 0;
 const GPS_TIMEOUT = 610000; // 610초 동안 신호 없으면 리셋
 
-// Haversine 공식 (지도 코드와 동일)
+// Haversine 공식
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3; // 지구 반지름 (미터)
   const φ1 = lat1 * Math.PI / 180;
@@ -143,7 +255,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
             Math.cos(φ1) * Math.cos(φ2) *
             Math.sin(Δλ/2) * Math.sin(Δλ/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c; // 미터 단위로 반환
+  return R * c;
 }
 
 /* =========================
@@ -174,13 +286,13 @@ function resetDistance() {
 ========================= */
 function updateDistanceDisplay() {
   const distanceEl = document.getElementById('distance');
-  distanceEl.innerHTML = 
-    '<span class="status-dot"></span>이동거리: ' + totalDistance.toFixed(2) + ' km';
-  updateStatus('');
+  if (distanceEl) {
+    distanceEl.innerHTML = '이동거리: ' + totalDistance.toFixed(2) + ' km';
+  }
 }
 
 /* =========================
-    RealtimeIRL GPS 수신 (검증된 코드)
+    RealtimeIRL GPS 수신
 ========================= */
 try {
   RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
@@ -230,8 +342,7 @@ try {
 
 } catch (error) {
   console.error('RealtimeIRL 오류:', error);
-  document.getElementById('distance').innerHTML =
-    '<span class="status-dot error"></span>이동거리: 연결 실패';
+  document.getElementById('distance').innerHTML = '이동거리: 연결 실패';
   updateStatus('error');
 }
 
@@ -245,12 +356,13 @@ setInterval(() => {
     if (timeSinceLastUpdate > GPS_TIMEOUT) {
       console.log('⚠️ GPS 신호 없음 - 거리 리셋');
       resetDistance();
-      lastUpdateTime = 0; // 다시 체크하지 않도록
+      lastUpdateTime = 0;
       updateStatus('error');
       
       const distanceEl = document.getElementById('distance');
-      distanceEl.innerHTML = 
-        '<span class="status-dot error"></span>이동거리: GPS 신호 없음';
+      if (distanceEl) {
+        distanceEl.innerHTML = '이동거리: GPS 신호 없음';
+      }
     }
   }
 }, 1000);
@@ -282,7 +394,6 @@ async function updateWeather() {
 updateWeather();
 setInterval(updateWeather, 600000); // 10분마다
 
-
 /* =========================
     시간 (오전/오후)
 ========================= */
@@ -299,7 +410,6 @@ function updateTime() {
 
 updateTime();
 setInterval(updateTime, 1000);
-
 
 /* =========================
     배터리
@@ -320,16 +430,23 @@ if (navigator.getBattery) {
   document.getElementById("battery").innerHTML = "🔋 배터리: N/A";
 }
 
+/* =========================
+    Firebase 데이터 로드 시작
+========================= */
+// Firebase가 초기화될 시간을 주기 위해 약간 지연
+setTimeout(() => {
+  loadRevenueData();
+}, 1000);
 
 /* =========================
     디버깅 (5초마다)
 ========================= */
 setInterval(() => {
   const timeSinceUpdate = lastUpdateTime > 0 ? Math.floor((Date.now() - lastUpdateTime) / 1000) : 0;
-  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 이전위치: ${previousLocation ? 'O' : 'X'} | 마지막 업데이트: ${timeSinceUpdate}초 전`);
+  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 마지막 업데이트: ${timeSinceUpdate}초 전`);
 }, 5000);
 
-console.log('프랭크 오버레이 초기화 완료');
+console.log('프랭크 오버레이 통합 완료');
 </script>
 
 </body>
