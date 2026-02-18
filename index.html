@@ -2,463 +2,217 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<title>프랭크 오버레이 (GPS + 수익)</title>
+<title>프랭크 오버레이 (GPS)</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: transparent;
-    color: white;
-  }
+html, body {
+margin: 0;
+padding: 0;
+overflow: hidden;
+font-family: "Pretendard", sans-serif;
+background: transparent;
+color: white;
+}
 
-  /* 하단바 - 한 줄 고정 */
-  #overlay {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 40px; /* 높이 고정 */
-    background: rgba(0, 0, 0, 0.70);
-    backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: space-between; /* 좌우 정렬 */
-    font-size: 14px;
-    padding: 0 20px;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-    white-space: nowrap; /* 줄바꿈 방지 */
-    overflow-x: auto; /* 내용이 많으면 스크롤 */
-    overflow-y: hidden;
-    gap: 15px;
-  }
+#overlay {
+position: fixed;
+bottom: 0;
+left: 0;
+right: 0;
+height: 40px;
+background: rgba(0,0,0,0.7);
+display: flex;
+align-items: center;
+justify-content: space-between;
+font-size: 14px;
+padding: 0 20px;
+white-space: nowrap;
+}
 
-  /* 왼쪽 섹션 (GPS + 수익) */
-  .left-section {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-shrink: 0;
-  }
+.left-section,
+.right-section {
+display: flex;
+align-items: center;
+gap: 15px;
+}
 
-  /* 오른쪽 섹션 (날짜/시간 + 배터리 + 로고) */
-  .right-section {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-shrink: 0;
-    margin-left: auto; /* 오른쪽 정렬 */
-  }
+.icon {
+height: 20px;
+}
 
-  /* 공통 섹션 스타일 */
-  .section {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
-  }
+#distance {
+font-weight: 600;
+color: #00ff88;
+}
 
-  .icon {
-    height: 20px;
-    width: auto;
-    opacity: 0.9;
-    transition: opacity 0.3s ease;
-    flex-shrink: 0;
-  }
+.status-dot {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+background: #4CAF50;
+margin-right: 5px;
+}
 
-  .icon:hover {
-    opacity: 1;
-  }
+.status-dot.connecting {
+background: orange;
+}
 
-  /* 거리 강조 */
-  #distance {
-    font-weight: 600;
-    color: #00ff88;
-    text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
-  }
-
-  /* 수익 데이터 스타일 */
-  .revenue-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 4px 10px;
-    border-radius: 20px;
-    flex-shrink: 0;
-  }
-
-  .revenue-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .revenue-label {
-    font-size: 11px;
-    opacity: 0.7;
-  }
-
-  .revenue-value {
-    font-weight: 600;
-    font-size: 13px;
-  }
-
-  #daily-value { color: #4CAF50; }
-  #weekly-value { color: #2196F3; }
-  #monthly-value { color: #FF9800; }
-
-  /* 상태 표시 */
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #4CAF50;
-    display: inline-block;
-    margin-right: 5px;
-    animation: pulse 2s infinite;
-    flex-shrink: 0;
-  }
-
-  .status-dot.connecting {
-    background: #FF9800;
-  }
-
-  .status-dot.error {
-    background: #F44336;
-  }
-
-  @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-  }
-
-  /* 날씨, 시간, 배터리 아이콘 크기 통일 */
-  .section i, .section span:first-child {
-    font-style: normal;
-    display: inline-block;
-    min-width: 24px;
-  }
-
-  /* 스크롤바 숨김 (필요시) */
-  #overlay::-webkit-scrollbar {
-    display: none;
-  }
+.status-dot.error {
+background: red;
+}
 </style>
 </head>
 
 <body>
 
-<!-- 📌 하단 오버레이 - 한 줄 고정 -->
 <div id="overlay">
 
-  <!-- 왼쪽: GPS + 수익 -->
-  <div class="left-section">
-    <!-- GPS 이동거리 섹션 -->
-    <div class="section">
-      <span class="status-dot connecting"></span>
-      <span id="distance">이동거리: 0.00 km</span>
-    </div>
+<div class="left-section">
 
-    <!-- 수익 데이터 (한 줄로 통합) -->
-    <div class="revenue-wrapper">
-      <div class="revenue-item">
-        <span class="revenue-label">일</span>
-        <span class="revenue-value" id="daily-value">0</span>
-      </div>
-      <div class="revenue-item">
-        <span class="revenue-label">월</span>
-        <span class="revenue-value" id="weekly-value">0</span>
-      </div>
-      <div class="revenue-item">
-        <span class="revenue-label">년</span>
-        <span class="revenue-value" id="monthly-value">0</span>
-      </div>
-    </div>
-  </div>
+<div class="section">
 
-  <!-- 오른쪽: 날씨 + 시간 + 배터리 + 로고 -->
-  <div class="right-section">
-    <!-- 날씨 섹션 -->
-    <div class="section" id="weather">
-      <span>🌡️</span> 날씨: --°C
-    </div>
-    
-    <!-- 시간 섹션 -->
-    <div class="section" id="time">
-      <span>🕐</span> 시간: --:--
-    </div>
-    
-    <!-- 배터리 섹션 -->
-    <div class="section" id="battery">
-      <span>🔋</span> 배터리: --%
-    </div>
+<span class="status-dot connecting"></span>
 
-    <!-- 플랫폼 로고 섹션 (가로로 정렬) -->
-    <div class="section">
-      <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png" alt="숲" title="숲" />
-      <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png" alt="치지직" title="치지직" />
-      <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%ED%8A%B8%EC%9C%84%EC%B9%98%EB%A1%9C%EA%B3%A0.png" alt="Twitch" title="Twitch" />
-      <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8A%9C%EB%B8%8C%EB%A1%9C%EA%B3%A0.png" alt="YouTube" title="YouTube" />
-    </div>
-  </div>
+<span id="distance">이동거리: 0.00 km</span>
 
 </div>
 
-<!-- 나머지 JavaScript는 동일 -->
+</div>
+
+
+<div class="right-section">
+
+<div id="weather">🌡️ --°C</div>
+
+<div id="time">🕐 --:--</div>
+
+<div id="battery">🔋 --%</div>
+
+<div>
+
+<img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png">
+
+<img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png">
+
+<img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%ED%8A%B8%EC%9C%84%EC%B9%98%EB%A1%9C%EA%B3%A0.png">
+
+<img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8A%9C%EB%B8%8C%EB%A1%9C%EA%B3%A0.png">
+
+</div>
+
+</div>
+
+</div>
+
 <script>
-/* =========================
-    Firebase 설정
-========================= */
-const firebaseConfig = {
-    apiKey: "AIzaSyA5hMmE",
-    authDomain: "rider43543.firebaseapp.com",
-    databaseURL: "https34545-bf48b-default-rtdb.firebaseio.com",
-    projectId: "rider-bf48b",
-    storageBucket: "rid543rebasestorage.app",
-    messagingSenderId: "1026929653322",
-    appId: "1:102695453322:web:b90541cccba5b4186198b3"
-};
 
-// Firebase 초기화
-let db;
-try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    console.log('Firebase 연결 성공');
-} catch (error) {
-    console.error('Firebase 초기화 실패:', error);
-}
-
-/* =========================
-    Firebase 데이터 가져오기
-========================= */
-function loadRevenueData() {
-    if (!db) {
-        console.error('Firebase가 초기화되지 않았습니다');
-        return;
-    }
-
-    db.ref('overlayData').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            document.getElementById('daily-value').textContent = 
-                data.daily ? formatRevenue(data.daily) : '0';
-            document.getElementById('weekly-value').textContent = 
-                data.weekly ? formatRevenue(data.weekly) : '0';
-            document.getElementById('monthly-value').textContent = 
-                data.monthly ? formatRevenue(data.monthly) : '0';
-            
-            console.log('수익 데이터 업데이트:', data);
-        }
-    }, (error) => {
-        console.error('Firebase 데이터 로드 실패:', error);
-    });
-}
-
-// 수익 데이터 포맷팅
-function formatRevenue(value) {
-    const num = parseInt(value.toString().replace(/[^0-9]/g, ''));
-    if (isNaN(num)) return value;
-    return num.toLocaleString() + '원';
-}
-
-/* =========================
-    기본 설정
-========================= */
 const PULL_KEY = "zeoeyze9htbyx455";
 const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 
-/* =========================
-    이동거리 계산
-========================= */
+
 let totalDistance = 0;
 let previousLocation = null;
-let lastUpdateTime = 0;
-const GPS_TIMEOUT = 610000;
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+RealtimeIRL.forPullKey(PULL_KEY)
+.addLocationListener(location => {
+
+if(previousLocation){
+
+const distance = getDistance(
+
+previousLocation.latitude,
+previousLocation.longitude,
+
+location.latitude,
+location.longitude
+
+);
+
+totalDistance += distance / 1000;
+
 }
 
-function updateStatus(status) {
-  const dot = document.querySelector('.status-dot');
-  if (dot) {
-    dot.className = 'status-dot';
-    if (status) {
-      dot.classList.add(status);
-    }
-  }
+previousLocation = location;
+
+document.getElementById("distance").innerText =
+"이동거리: " + totalDistance.toFixed(2) + " km";
+
+});
+
+
+function getDistance(lat1, lon1, lat2, lon2){
+
+const R = 6371e3;
+
+const φ1 = lat1 * Math.PI/180;
+const φ2 = lat2 * Math.PI/180;
+
+const Δφ = (lat2-lat1) * Math.PI/180;
+const Δλ = (lon2-lon1) * Math.PI/180;
+
+const a =
+Math.sin(Δφ/2)*Math.sin(Δφ/2)+
+Math.cos(φ1)*Math.cos(φ2)*
+Math.sin(Δλ/2)*Math.sin(Δλ/2);
+
+const c = 2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+
+return R*c;
+
 }
 
-function resetDistance() {
-  totalDistance = 0;
-  previousLocation = null;
-  console.log('거리 초기화됨');
-  updateDistanceDisplay();
-}
 
-function updateDistanceDisplay() {
-  const distanceEl = document.getElementById('distance');
-  if (distanceEl) {
-    distanceEl.textContent = '이동거리: ' + totalDistance.toFixed(2) + ' km';
-  }
-}
+async function updateWeather(){
 
-/* =========================
-    RealtimeIRL GPS 수신
-========================= */
-try {
-  RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
-    const now = Date.now();
-    console.log('위치 수신:', location);
-    
-    if (lastUpdateTime > 0 && (now - lastUpdateTime) > GPS_TIMEOUT) {
-      console.log('⚠️ GPS 신호 끊김 감지 - 거리 리셋');
-      resetDistance();
-    }
-    
-    lastUpdateTime = now;
-    
-    if (location.latitude && location.longitude) {
-      if (previousLocation) {
-        const distance = calculateDistance(
-          previousLocation.latitude, 
-          previousLocation.longitude,
-          location.latitude, 
-          location.longitude
-        );
-        
-        totalDistance += distance / 1000;
-        console.log(`이동: ${distance.toFixed(2)}m, 총: ${totalDistance.toFixed(2)}km`);
-      }
-      
-      previousLocation = location;
-      updateDistanceDisplay();
-      updateStatus('');
-    } else {
-      console.warn('유효하지 않은 위치 데이터');
-      updateStatus('error');
-    }
-  });
+const res =
+await fetch(
 
-  console.log('RealtimeIRL 연결 시작');
-  updateStatus('connecting');
+"https://api.openweathermap.org/data/2.5/weather?q=Sejong,KR&appid="+WEATHER_API+"&units=metric"
 
-} catch (error) {
-  console.error('RealtimeIRL 오류:', error);
-  document.getElementById('distance').textContent = '이동거리: 연결 실패';
-  updateStatus('error');
-}
+);
 
-/* =========================
-    GPS 신호 체크
-========================= */
-setInterval(() => {
-  if (lastUpdateTime > 0) {
-    const timeSinceLastUpdate = Date.now() - lastUpdateTime;
-    
-    if (timeSinceLastUpdate > GPS_TIMEOUT) {
-      console.log('⚠️ GPS 신호 없음 - 거리 리셋');
-      resetDistance();
-      lastUpdateTime = 0;
-      updateStatus('error');
-      
-      const distanceEl = document.getElementById('distance');
-      if (distanceEl) {
-        distanceEl.textContent = '이동거리: GPS 신호 없음';
-      }
-    }
-  }
-}, 1000);
+const data = await res.json();
 
-/* =========================
-    날씨 업데이트
-========================= */
-async function updateWeather() {
-  const url =
-    "https://api.openweathermap.org/data/2.5/weather?q=Sejong,KR&appid=" +
-    WEATHER_API +
-    "&units=metric&lang=kr";
+document.getElementById("weather").innerText =
+"🌡️ "+Math.round(data.main.temp)+"°C";
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    const temp = Math.round(data.main.temp);
-    const description = data.weather[0]?.description || '';
-    
-    document.getElementById("weather").innerHTML =
-      `<span>🌡️</span> 날씨: ${temp}°C ${description}`;
-  } catch (e) {
-    console.error('날씨 업데이트 실패:', e);
-    document.getElementById("weather").innerHTML = "<span>🌡️</span> 날씨: --°C";
-  }
 }
 
 updateWeather();
-setInterval(updateWeather, 600000);
 
-/* =========================
-    시간 업데이트
-========================= */
-function updateTime() {
-  const now = new Date();
-  let hours = now.getHours();
-  const minutes = now.getMinutes().toString().padStart(2, "0");
-  const ampm = hours >= 12 ? "오후" : "오전";
-  hours = hours % 12 || 12;
 
-  document.getElementById("time").innerHTML =
-    `<span>🕐</span> 시간: ${ampm} ${hours}:${minutes}`;
+setInterval(updateWeather,600000);
+
+
+setInterval(()=>{
+
+const now = new Date();
+
+document.getElementById("time").innerText =
+"🕐 "+now.toLocaleTimeString();
+
+},1000);
+
+
+navigator.getBattery().then(battery=>{
+
+function update(){
+
+document.getElementById("battery").innerText =
+"🔋 "+Math.round(battery.level*100)+"%";
+
 }
 
-updateTime();
-setInterval(updateTime, 1000);
+battery.addEventListener("levelchange",update);
 
-/* =========================
-    배터리 업데이트
-========================= */
-if (navigator.getBattery) {
-  navigator.getBattery().then((battery) => {
-    function updateBattery() {
-      const level = Math.round(battery.level * 100);
-      const charging = battery.charging ? '⚡' : '🔋';
-      document.getElementById("battery").innerHTML =
-        `<span>${charging}</span> 배터리: ${level}%`;
-    }
-    battery.addEventListener("levelchange", updateBattery);
-    battery.addEventListener("chargingchange", updateBattery);
-    updateBattery();
-  });
-} else {
-  document.getElementById("battery").innerHTML = "<span>🔋</span> 배터리: N/A";
-}
+update();
 
-/* =========================
-    Firebase 데이터 로드
-========================= */
-setTimeout(() => {
-  loadRevenueData();
-}, 1000);
+});
 
-console.log('프랭크 오버레이 통합 완료 (한 줄 고정)');
+
 </script>
 
 </body>
