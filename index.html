@@ -9,24 +9,17 @@
 
 <style>
 
-html, body {
-
+html,body{
 margin:0;
 padding:0;
-
 background:transparent;
-
-font-family: Pretendard, sans-serif;
-
+font-family:Pretendard,sans-serif;
 overflow:hidden;
-
 color:white;
-
 }
 
 
 /* 전체 위치 */
-
 #overlay{
 
 position:fixed;
@@ -54,8 +47,7 @@ font-size:14px;
 }
 
 
-/* GPS 색상 */
-
+/* GPS */
 #distance{
 
 color:#00ff88;
@@ -74,7 +66,7 @@ height:18px;
 }
 
 
-/* 상태 점 */
+/* 상태점 */
 
 .status-dot{
 
@@ -90,6 +82,28 @@ margin-right:6px;
 display:inline-block;
 
 }
+
+
+/* 배터리 색상 */
+
+.low{
+
+color:#ff4444;
+
+}
+
+.mid{
+
+color:#ffaa00;
+
+}
+
+.full{
+
+color:#00ff88;
+
+}
+
 
 </style>
 
@@ -179,6 +193,8 @@ RealtimeIRL
 .addLocationListener(loc=>{
 
 
+/* 거리 계산 */
+
 if(prev){
 
 totalDistance+=
@@ -195,20 +211,54 @@ loc.longitude
 
 )/1000;
 
-
 }
 
 
 prev=loc;
 
 
-document
-
-.getElementById("distance")
+document.getElementById("distance")
 
 .innerText=
 
 totalDistance.toFixed(2)+" km";
+
+
+
+/* ✅ 안드로이드폰 배터리 표시 */
+
+if(loc.batteryLevel!=null){
+
+const level=Math.round(loc.batteryLevel);
+
+const charging=loc.charging;
+
+
+const icon=
+
+charging?"⚡":"🔋";
+
+
+const el=document.getElementById("battery");
+
+
+el.innerText=
+
+icon+" "+level+"%";
+
+
+
+/* 색상 */
+
+el.className="";
+
+if(level<=20) el.classList.add("low");
+
+else if(level<=50) el.classList.add("mid");
+
+else el.classList.add("full");
+
+}
 
 
 });
@@ -254,7 +304,6 @@ const WEATHER_API="3a4a39b054762e36581605681026ed35";
 
 async function weather(){
 
-
 const r=
 
 await fetch(
@@ -263,18 +312,13 @@ await fetch(
 
 );
 
-
 const d=await r.json();
 
-
-document
-
-.getElementById("weather")
+document.getElementById("weather")
 
 .innerText=
 
 "🌡️ "+Math.round(d.main.temp)+"°C";
-
 
 }
 
@@ -289,9 +333,7 @@ setInterval(weather,600000);
 
 setInterval(()=>{
 
-document
-
-.getElementById("time")
+document.getElementById("time")
 
 .innerText=
 
@@ -299,36 +341,6 @@ document
 
 },1000);
 
-
-
-/* 배터리 */
-
-navigator
-
-.getBattery()
-
-.then(b=>{
-
-
-function u(){
-
-document
-
-.getElementById("battery")
-
-.innerText=
-
-"🔋 "+Math.round(b.level*100)+"%";
-
-}
-
-
-b.addEventListener("levelchange",u);
-
-u();
-
-
-});
 
 
 </script>
