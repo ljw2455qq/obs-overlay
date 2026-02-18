@@ -1,75 +1,139 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8" />
 
 <title>프랭크 오버레이</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
 <style>
 
-html,body{
+html, body {
+
 margin:0;
 padding:0;
+
 background:transparent;
-font-family:Pretendard;
+
+font-family: Pretendard, sans-serif;
+
 overflow:hidden;
+
 color:white;
+
 }
+
+
+/* 전체 위치 */
 
 #overlay{
+
 position:fixed;
+
 bottom:10px;
+
 right:20px;
+
 display:flex;
+
 align-items:center;
+
 gap:15px;
+
 background:rgba(0,0,0,0.6);
+
 padding:6px 14px;
+
 border-radius:20px;
+
 backdrop-filter:blur(6px);
+
 font-size:14px;
+
 }
+
+
+/* GPS 색상 */
 
 #distance{
+
 color:#00ff88;
+
 font-weight:bold;
+
 }
+
+
+/* 아이콘 */
 
 .icon{
+
 height:18px;
+
 }
 
+
+/* 상태 점 */
+
 .status-dot{
+
 width:8px;
 height:8px;
+
 border-radius:50%;
+
 background:#00ff88;
+
 margin-right:6px;
+
 display:inline-block;
+
 }
 
 </style>
+
 </head>
 
 <body>
 
+
 <div id="overlay">
 
+
 <div>
+
 <span class="status-dot"></span>
-<span id="distance">0.00 km</span>
+
+<span id="distance">
+
+0.00 km
+
+</span>
+
 </div>
 
-<div id="weather">🌡️ --</div>
 
-<div id="time">🕐 --</div>
+<div id="weather">
 
-<div id="battery">🔋 --</div>
+🌡️ --
+
+</div>
+
+
+<div id="time">
+
+🕐 --
+
+</div>
+
+
+<div id="battery">
+
+🔋 --
+
+</div>
+
 
 <div>
 
@@ -87,53 +151,12 @@ src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8
 
 </div>
 
+
 </div>
 
 
+
 <script>
-
-
-/* Firebase 설정 */
-
-const firebaseConfig = {
-
-apiKey: "AIzaSyA5hMmN9QFgdFtaA5gicS_pj-blu_jJdvE",
-
-authDomain: "rider-bf48b.firebaseapp.com",
-
-databaseURL: "https://rider-bf48b-default-rtdb.firebaseio.com",
-
-projectId: "rider-bf48b",
-
-storageBucket: "rider-bf48b.firebasestorage.app",
-
-messagingSenderId: "1026929653322",
-
-appId: "1:1026929653322:web:b90541cccba5b4186198b3"
-
-};
-
-firebase.initializeApp(firebaseConfig);
-
-const db = firebase.database();
-
-
-/* 배터리 수신 */
-
-db.ref("phone/battery").on("value",snap=>{
-
-const data = snap.val();
-
-if(data){
-
-const icon = data.charging ? "⚡" : "🔋";
-
-document.getElementById("battery").innerText =
-icon+" "+data.level+"%";
-
-}
-
-});
 
 
 /* Pull key */
@@ -141,10 +164,20 @@ icon+" "+data.level+"%";
 const PULL_KEY="zeoeyze9htbyx455";
 
 
+/* 거리 */
+
 let totalDistance=0;
+
 let prev=null;
 
-RealtimeIRL.forPullKey(PULL_KEY).addLocationListener(loc=>{
+
+
+RealtimeIRL
+
+.forPullKey(PULL_KEY)
+
+.addLocationListener(loc=>{
+
 
 if(prev){
 
@@ -153,20 +186,34 @@ totalDistance+=
 getDistance(
 
 prev.latitude,
+
 prev.longitude,
+
 loc.latitude,
+
 loc.longitude
 
 )/1000;
 
+
 }
+
 
 prev=loc;
 
-document.getElementById("distance").innerText=
+
+document
+
+.getElementById("distance")
+
+.innerText=
+
 totalDistance.toFixed(2)+" km";
 
+
 });
+
+
 
 
 function getDistance(lat1,lon1,lat2,lon2){
@@ -174,9 +221,11 @@ function getDistance(lat1,lon1,lat2,lon2){
 const R=6371e3;
 
 const φ1=lat1*Math.PI/180;
+
 const φ2=lat2*Math.PI/180;
 
 const Δφ=(lat2-lat1)*Math.PI/180;
+
 const Δλ=(lon2-lon1)*Math.PI/180;
 
 const a=
@@ -187,6 +236,7 @@ Math.cos(φ1)*Math.cos(φ2)*
 
 Math.sin(Δλ/2)**2;
 
+
 const c=
 
 2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
@@ -196,22 +246,14 @@ return R*c;
 }
 
 
-/* 시간 */
-
-setInterval(()=>{
-
-document.getElementById("time").innerText=
-
-"🕐 "+new Date().toLocaleTimeString();
-
-},1000);
-
 
 /* 날씨 */
 
-const WEATHER_API="여기에 날씨 API";
+const WEATHER_API="3a4a39b054762e36581605681026ed35";
+
 
 async function weather(){
+
 
 const r=
 
@@ -221,20 +263,77 @@ await fetch(
 
 );
 
+
 const d=await r.json();
 
-document.getElementById("weather").innerText=
+
+document
+
+.getElementById("weather")
+
+.innerText=
 
 "🌡️ "+Math.round(d.main.temp)+"°C";
 
+
 }
+
 
 weather();
 
 setInterval(weather,600000);
 
 
+
+/* 시간 */
+
+setInterval(()=>{
+
+document
+
+.getElementById("time")
+
+.innerText=
+
+"🕐 "+new Date().toLocaleTimeString();
+
+},1000);
+
+
+
+/* 배터리 */
+
+navigator
+
+.getBattery()
+
+.then(b=>{
+
+
+function u(){
+
+document
+
+.getElementById("battery")
+
+.innerText=
+
+"🔋 "+Math.round(b.level*100)+"%";
+
+}
+
+
+b.addEventListener("levelchange",u);
+
+u();
+
+
+});
+
+
 </script>
 
+
 </body>
+
 </html>
