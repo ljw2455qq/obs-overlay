@@ -2,10 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<title>프랭크 오버레이 (GPS + 수익)</title>
+<title>프랭크 오버레이 (GPS 이동거리)</title>
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <style>
   html, body {
@@ -17,58 +15,34 @@
     color: white;
   }
 
-  /* 하단바 - 한 줄 고정 */
+  /* 하단바 */
   #overlay {
     position: fixed;
     bottom: 0;
-    left: 0;
-    right: 0;
-    height: 40px; /* 높이 고정 */
+    width: 100%;
+    height: 38px;
     background: rgba(0, 0, 0, 0.70);
     backdrop-filter: blur(5px);
     display: flex;
     align-items: center;
-    justify-content: space-between; /* 좌우 정렬 */
-    font-size: 14px;
-    padding: 0 20px;
+    justify-content: center;
+    gap: 25px;
+    font-size: 15px;
+    padding: 0 15px;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-    white-space: nowrap; /* 줄바꿈 방지 */
-    overflow-x: auto; /* 내용이 많으면 스크롤 */
-    overflow-y: hidden;
-    gap: 15px;
   }
 
-  /* 왼쪽 섹션 (GPS + 수익) */
-  .left-section {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-shrink: 0;
-  }
-
-  /* 오른쪽 섹션 (날짜/시간 + 배터리 + 로고) */
-  .right-section {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-shrink: 0;
-    margin-left: auto; /* 오른쪽 정렬 */
-  }
-
-  /* 공통 섹션 스타일 */
   .section {
     display: flex;
     align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
+    gap: 6px;
+    white-space: nowrap;
   }
 
   .icon {
     height: 20px;
-    width: auto;
     opacity: 0.9;
     transition: opacity 0.3s ease;
-    flex-shrink: 0;
   }
 
   .icon:hover {
@@ -82,37 +56,6 @@
     text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
   }
 
-  /* 수익 데이터 스타일 */
-  .revenue-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 4px 10px;
-    border-radius: 20px;
-    flex-shrink: 0;
-  }
-
-  .revenue-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .revenue-label {
-    font-size: 11px;
-    opacity: 0.7;
-  }
-
-  .revenue-value {
-    font-weight: 600;
-    font-size: 13px;
-  }
-
-  #daily-value { color: #4CAF50; }
-  #weekly-value { color: #2196F3; }
-  #monthly-value { color: #FF9800; }
-
   /* 상태 표시 */
   .status-dot {
     width: 8px;
@@ -120,9 +63,8 @@
     border-radius: 50%;
     background: #4CAF50;
     display: inline-block;
-    margin-right: 5px;
+    margin-right: 4px;
     animation: pulse 2s infinite;
-    flex-shrink: 0;
   }
 
   .status-dot.connecting {
@@ -139,136 +81,42 @@
     100% { opacity: 1; }
   }
 
-  /* 날씨, 시간, 배터리 아이콘 크기 통일 */
-  .section i, .section span:first-child {
-    font-style: normal;
-    display: inline-block;
-    min-width: 24px;
-  }
-
-  /* 스크롤바 숨김 (필요시) */
-  #overlay::-webkit-scrollbar {
-    display: none;
+  /* 반응형 */
+  @media (max-width: 768px) {
+    #overlay {
+      gap: 15px;
+      font-size: 13px;
+    }
+    .icon {
+      height: 18px;
+    }
   }
 </style>
 </head>
 
 <body>
 
-<!-- 📌 하단 오버레이 - 한 줄 고정 -->
+<!-- 📌 하단 오버레이 -->
 <div id="overlay">
 
-  <!-- 왼쪽: GPS + 수익 -->
-  <div class="left-section">
-    <!-- GPS 이동거리 섹션 -->
-    <div class="section">
-      <span class="status-dot connecting"></span>
-      <span id="distance">이동거리: 0.00 km</span>
-    </div>
-
-    <!-- 수익 데이터 (한 줄로 통합) -->
-    <div class="revenue-wrapper">
-      <div class="revenue-item">
-        <span class="revenue-label">일</span>
-        <span class="revenue-value" id="daily-value">0</span>
-      </div>
-      <div class="revenue-item">
-        <span class="revenue-label">월</span>
-        <span class="revenue-value" id="weekly-value">0</span>
-      </div>
-      <div class="revenue-item">
-        <span class="revenue-label">년</span>
-        <span class="revenue-value" id="monthly-value">0</span>
-      </div>
-    </div>
+  <div class="section" id="distance">
+    <span class="status-dot connecting"></span>
+    이동거리: 0.00 km
   </div>
+  <div class="section" id="weather">🌡️ 날씨: --°C</div>
+  <div class="section" id="time">🕐 시간: --:--</div>
+  <div class="section" id="battery">🔋 배터리: --%</div>
 
-  <!-- 오른쪽: 날씨 + 시간 + 배터리 + 로고 -->
-  <div class="right-section">
-    <!-- 날씨 섹션 -->
-    <div class="section" id="weather">
-      <span>🌡️</span> 날씨: --°C
-    </div>
-    
-    <!-- 시간 섹션 -->
-    <div class="section" id="time">
-      <span>🕐</span> 시간: --:--
-    </div>
-    
-    <!-- 배터리 섹션 -->
-    <div class="section" id="battery">
-      <span>🔋</span> 배터리: --%
-    </div>
-
-    <!-- 플랫폼 로고 섹션 (가로로 정렬) -->
-    <div class="section">
-      <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png" alt="숲" title="숲" />
-      <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png" alt="치지직" title="치지직" />
-      <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%ED%8A%B8%EC%9C%84%EC%B9%98%EB%A1%9C%EA%B3%A0.png" alt="Twitch" title="Twitch" />
-      <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8A%9C%EB%B8%8C%EB%A1%9C%EA%B3%A0.png" alt="YouTube" title="YouTube" />
-    </div>
+<!-- 플랫폼 로고 (GitHub Raw URL - 4개) -->
+  <div class="section">
+    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png" alt="숲" title="숲" />
+    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png" alt="치지직" title="치지직" />
+    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%ED%8A%B8%EC%9C%84%EC%B9%98%EB%A1%9C%EA%B3%A0.png" alt="Twitch" title="Twitch" />
+    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8A%9C%EB%B8%8C%EB%A1%9C%EA%B3%A0.png" alt="YouTube" title="YouTube" />
   </div>
-
 </div>
 
-<!-- 나머지 JavaScript는 동일 -->
 <script>
-/* =========================
-    Firebase 설정
-========================= */
-const firebaseConfig = {
-    apiKey: "AIzaSyA5hMmN9QFgdFtaA5gicS_pj-blu_jJdvE",
-    authDomain: "rider-bf48b.firebaseapp.com",
-    databaseURL: "https://rider-bf48b-default-rtdb.firebaseio.com",
-    projectId: "rider-bf48b",
-    storageBucket: "rider-bf48b.firebasestorage.app",
-    messagingSenderId: "1026929653322",
-    appId: "1:1026929653322:web:b90541cccba5b4186198b3"
-};
-
-// Firebase 초기화
-let db;
-try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    console.log('Firebase 연결 성공');
-} catch (error) {
-    console.error('Firebase 초기화 실패:', error);
-}
-
-/* =========================
-    Firebase 데이터 가져오기
-========================= */
-function loadRevenueData() {
-    if (!db) {
-        console.error('Firebase가 초기화되지 않았습니다');
-        return;
-    }
-
-    db.ref('overlayData').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            document.getElementById('daily-value').textContent = 
-                data.daily ? formatRevenue(data.daily) : '0';
-            document.getElementById('weekly-value').textContent = 
-                data.weekly ? formatRevenue(data.weekly) : '0';
-            document.getElementById('monthly-value').textContent = 
-                data.monthly ? formatRevenue(data.monthly) : '0';
-            
-            console.log('수익 데이터 업데이트:', data);
-        }
-    }, (error) => {
-        console.error('Firebase 데이터 로드 실패:', error);
-    });
-}
-
-// 수익 데이터 포맷팅
-function formatRevenue(value) {
-    const num = parseInt(value.toString().replace(/[^0-9]/g, ''));
-    if (isNaN(num)) return value;
-    return num.toLocaleString() + '원';
-}
-
 /* =========================
     기본 설정
 ========================= */
@@ -276,15 +124,16 @@ const PULL_KEY = "zeoeyze9htbyx455";
 const WEATHER_API = "3a4a39b054762e36581605681026ed35";
 
 /* =========================
-    이동거리 계산
+    이동거리 계산 (지도 코드에서 검증된 방식)
 ========================= */
 let totalDistance = 0;
 let previousLocation = null;
 let lastUpdateTime = 0;
-const GPS_TIMEOUT = 610000;
+const GPS_TIMEOUT = 610000; // 610초 동안 신호 없으면 리셋
 
+// Haversine 공식 (지도 코드와 동일)
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
+  const R = 6371e3; // 지구 반지름 (미터)
   const φ1 = lat1 * Math.PI / 180;
   const φ2 = lat2 * Math.PI / 180;
   const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -294,9 +143,12 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
             Math.cos(φ1) * Math.cos(φ2) *
             Math.sin(Δλ/2) * Math.sin(Δλ/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+  return R * c; // 미터 단위로 반환
 }
 
+/* =========================
+    상태 표시 업데이트
+========================= */
 function updateStatus(status) {
   const dot = document.querySelector('.status-dot');
   if (dot) {
@@ -307,6 +159,9 @@ function updateStatus(status) {
   }
 }
 
+/* =========================
+    거리 초기화 함수
+========================= */
 function resetDistance() {
   totalDistance = 0;
   previousLocation = null;
@@ -314,21 +169,25 @@ function resetDistance() {
   updateDistanceDisplay();
 }
 
+/* =========================
+    거리 표시 업데이트
+========================= */
 function updateDistanceDisplay() {
   const distanceEl = document.getElementById('distance');
-  if (distanceEl) {
-    distanceEl.textContent = '이동거리: ' + totalDistance.toFixed(2) + ' km';
-  }
+  distanceEl.innerHTML = 
+    '<span class="status-dot"></span>이동거리: ' + totalDistance.toFixed(2) + ' km';
+  updateStatus('');
 }
 
 /* =========================
-    RealtimeIRL GPS 수신
+    RealtimeIRL GPS 수신 (검증된 코드)
 ========================= */
 try {
   RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
     const now = Date.now();
     console.log('위치 수신:', location);
     
+    // GPS 신호가 10초 이상 끊겼다가 다시 들어오면 리셋
     if (lastUpdateTime > 0 && (now - lastUpdateTime) > GPS_TIMEOUT) {
       console.log('⚠️ GPS 신호 끊김 감지 - 거리 리셋');
       resetDistance();
@@ -337,6 +196,7 @@ try {
     lastUpdateTime = now;
     
     if (location.latitude && location.longitude) {
+      // 이전 위치가 있으면 거리 계산
       if (previousLocation) {
         const distance = calculateDistance(
           previousLocation.latitude, 
@@ -345,12 +205,19 @@ try {
           location.longitude
         );
         
+        // 미터를 킬로미터로 변환
         totalDistance += distance / 1000;
+        
         console.log(`이동: ${distance.toFixed(2)}m, 총: ${totalDistance.toFixed(2)}km`);
       }
       
+      // 현재 위치 저장
       previousLocation = location;
+      
+      // 거리 표시 업데이트
       updateDistanceDisplay();
+      
+      // 상태 업데이트
       updateStatus('');
     } else {
       console.warn('유효하지 않은 위치 데이터');
@@ -363,12 +230,13 @@ try {
 
 } catch (error) {
   console.error('RealtimeIRL 오류:', error);
-  document.getElementById('distance').textContent = '이동거리: 연결 실패';
+  document.getElementById('distance').innerHTML =
+    '<span class="status-dot error"></span>이동거리: 연결 실패';
   updateStatus('error');
 }
 
 /* =========================
-    GPS 신호 체크
+    GPS 신호 체크 (1초마다)
 ========================= */
 setInterval(() => {
   if (lastUpdateTime > 0) {
@@ -377,13 +245,12 @@ setInterval(() => {
     if (timeSinceLastUpdate > GPS_TIMEOUT) {
       console.log('⚠️ GPS 신호 없음 - 거리 리셋');
       resetDistance();
-      lastUpdateTime = 0;
+      lastUpdateTime = 0; // 다시 체크하지 않도록
       updateStatus('error');
       
       const distanceEl = document.getElementById('distance');
-      if (distanceEl) {
-        distanceEl.textContent = '이동거리: GPS 신호 없음';
-      }
+      distanceEl.innerHTML = 
+        '<span class="status-dot error"></span>이동거리: GPS 신호 없음';
     }
   }
 }, 1000);
@@ -405,18 +272,19 @@ async function updateWeather() {
     const description = data.weather[0]?.description || '';
     
     document.getElementById("weather").innerHTML =
-      `<span>🌡️</span> 날씨: ${temp}°C ${description}`;
+      `🌡️ 날씨: ${temp}°C ${description}`;
   } catch (e) {
     console.error('날씨 업데이트 실패:', e);
-    document.getElementById("weather").innerHTML = "<span>🌡️</span> 날씨: --°C";
+    document.getElementById("weather").innerHTML = "🌡️ 날씨: --°C";
   }
 }
 
 updateWeather();
-setInterval(updateWeather, 600000);
+setInterval(updateWeather, 600000); // 10분마다
+
 
 /* =========================
-    시간 업데이트
+    시간 (오전/오후)
 ========================= */
 function updateTime() {
   const now = new Date();
@@ -426,14 +294,15 @@ function updateTime() {
   hours = hours % 12 || 12;
 
   document.getElementById("time").innerHTML =
-    `<span>🕐</span> 시간: ${ampm} ${hours}:${minutes}`;
+    "🕐 시간: " + ampm + " " + hours + ":" + minutes;
 }
 
 updateTime();
 setInterval(updateTime, 1000);
 
+
 /* =========================
-    배터리 업데이트
+    배터리
 ========================= */
 if (navigator.getBattery) {
   navigator.getBattery().then((battery) => {
@@ -441,25 +310,67 @@ if (navigator.getBattery) {
       const level = Math.round(battery.level * 100);
       const charging = battery.charging ? '⚡' : '🔋';
       document.getElementById("battery").innerHTML =
-        `<span>${charging}</span> 배터리: ${level}%`;
+        charging + " 배터리: " + level + "%";
     }
     battery.addEventListener("levelchange", updateBattery);
     battery.addEventListener("chargingchange", updateBattery);
     updateBattery();
   });
 } else {
-  document.getElementById("battery").innerHTML = "<span>🔋</span> 배터리: N/A";
+  document.getElementById("battery").innerHTML = "🔋 배터리: N/A";
 }
 
-/* =========================
-    Firebase 데이터 로드
-========================= */
-setTimeout(() => {
-  loadRevenueData();
-}, 1000);
 
-console.log('프랭크 오버레이 통합 완료 (한 줄 고정)');
+/* =========================
+    디버깅 (5초마다)
+========================= */
+setInterval(() => {
+  const timeSinceUpdate = lastUpdateTime > 0 ? Math.floor((Date.now() - lastUpdateTime) / 1000) : 0;
+  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 이전위치: ${previousLocation ? 'O' : 'X'} | 마지막 업데이트: ${timeSinceUpdate}초 전`);
+}, 5000);
+
+console.log('프랭크 오버레이 초기화 완료');
 </script>
 
 </body>
-</html>
+</html> 이코드와 <!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>관리 페이지</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="firebase.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #222; color: white; text-align: center; padding: 20px; }
+        input { padding: 8px; margin: 5px; font-size: 16px; }
+        button { padding: 10px 20px; font-size: 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>OBS 오버레이 데이터 입력</h1>
+    <input id="daily" placeholder="일 수익" type="text"><br>
+    <input id="weekly" placeholder="월 수익" type="text"><br>
+    <input id="monthly" placeholder="년 수익" type="text"><br>
+    <button onclick="saveData()">저장</button>
+
+    <script>
+        function saveData() {
+            let daily = document.getElementById('daily').value;
+            let weekly = document.getElementById('weekly').value;
+            let monthly = document.getElementById('monthly').value;
+
+            db.ref('overlayData').set({
+                daily: daily,
+                weekly: weekly,
+                monthly: monthly
+            }).then(() => {
+                alert("저장 완료!");
+            }).catch(err => {
+                console.error("저장 실패:", err);
+            });
+        }
+    </script>
+</body>
+</html> 이코드를 합치고 싶어요.
