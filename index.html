@@ -23,48 +23,48 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 36px; /* 높이 약간 낮춤 */
+    height: 36px;
     background: rgba(0, 0, 0, 0.70);
     backdrop-filter: blur(5px);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 13px; /* 폰트 크기 약간 축소 */
-    padding: 0 10px; /* 좌우 패딩 축소 */
+    font-size: 13px;
+    padding: 0 10px;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
     white-space: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
-    gap: 8px; /* 전체 간격 축소 */
+    gap: 8px;
   }
 
-  /* 왼쪽 섹션 (GPS + 수익) - 간격 축소 */
+  /* 왼쪽 섹션 (GPS + 수익) */
   .left-section {
     display: flex;
     align-items: center;
-    gap: 8px; /* 간격 축소 */
+    gap: 8px;
     flex-shrink: 0;
   }
 
-  /* 오른쪽 섹션 (날짜/시간 + 배터리 + 로고) - 간격 축소 */
+  /* 오른쪽 섹션 (날씨/시간/배터리 + 로고) */
   .right-section {
     display: flex;
     align-items: center;
-    gap: 8px; /* 간격 축소 */
+    gap: 8px;
     flex-shrink: 0;
     margin-left: auto;
   }
 
-  /* 공통 섹션 스타일 - 간격 축소 */
+  /* 공통 섹션 스타일 */
   .section {
     display: flex;
     align-items: center;
-    gap: 3px; /* 섹션 내 간격 축소 */
+    gap: 3px;
     flex-shrink: 0;
   }
 
   .icon {
-    height: 18px; /* 아이콘 크기 약간 축소 */
+    height: 18px;
     width: auto;
     opacity: 0.9;
     transition: opacity 0.3s ease;
@@ -75,42 +75,43 @@
     opacity: 1;
   }
 
-  /* 거리 강조 - 색상 변경 (연한 하늘색) */
+  /* 거리 - 연한 하늘색 */
   #distance {
     font-weight: 600;
     color: #7df9ff;
     text-shadow: 0 0 8px rgba(125, 249, 255, 0.5);
-    margin-right: 2px; /* 오른쪽 여백 최소화 */
+    font-size: 13px; /* 통일 */
+    margin-right: 2px;
   }
 
-  /* 수익 데이터 스타일 - 패딩 축소 */
+  /* 수익 데이터 스타일 */
   .revenue-wrapper {
     display: flex;
     align-items: center;
-    gap: 6px; /* 수익 항목 간격 축소 */
+    gap: 6px;
     background: rgba(255, 255, 255, 0.1);
-    padding: 3px 8px; /* 패딩 축소 */
-    border-radius: 16px; /* 라운드 약간 축소 */
+    padding: 3px 8px;
+    border-radius: 16px;
     flex-shrink: 0;
   }
 
   .revenue-item {
     display: flex;
     align-items: center;
-    gap: 2px; /* 레이블과 값 간격 축소 */
+    gap: 2px;
   }
 
   .revenue-label {
-    font-size: 10px; /* 레이블 폰트 축소 */
+    font-size: 11px; /* 레이블은 약간 작게 유지 */
     opacity: 0.7;
   }
 
   .revenue-value {
     font-weight: 600;
-    font-size: 12px; /* 값 폰트 약간 축소 */
+    font-size: 13px; /* 값은 13px로 통일 */
   }
 
-  /* 수익 색상 - 더 선명하게 */
+  /* 수익 색상 */
   #daily-value { 
     color: #ffd700;
     text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
@@ -126,14 +127,14 @@
     text-shadow: 0 0 8px rgba(255, 127, 127, 0.3);
   }
 
-  /* 상태 표시 - 거리 색상과 통일 */
+  /* 상태 표시 */
   .status-dot {
-    width: 7px; /* 도트 크기 약간 축소 */
+    width: 7px;
     height: 7px;
     border-radius: 50%;
     background: #7df9ff;
     display: inline-block;
-    margin-right: 3px; /* 오른쪽 여백 축소 */
+    margin-right: 3px;
     animation: pulse 2s infinite;
     flex-shrink: 0;
     box-shadow: 0 0 8px rgba(125, 249, 255, 0.5);
@@ -155,17 +156,42 @@
     100% { opacity: 1; transform: scale(1); }
   }
 
-  /* 날씨, 시간, 배터리 - 아이콘과 텍스트 간격 최소화 */
-  #weather, #time, #battery {
+  /* ===== 날씨, 시간, 배터리 통일 스타일 ===== */
+  /* 모든 info-item에 동일한 스타일 적용 */
+  .info-item {
     display: flex;
     align-items: center;
-    gap: 2px;
-    color: #ffffff;
+    gap: 3px;
+    color: #ffffff;  /* 모든 텍스트 흰색 통일 */
+    font-size: 13px;  /* 모든 폰트 크기 13px 통일 */
+    font-weight: 400; /* 일반 굵기 통일 */
+    text-shadow: none; /* 텍스트 그림자 제거 */
+    opacity: 1;       /* 투명도 통일 */
   }
 
-  #weather span, #time span, #battery span {
-    min-width: 18px; /* 아이콘 영역 최소화 */
+  .info-item span:first-child {
+    min-width: 18px;
     text-align: center;
+    font-size: 13px;  /* 아이콘 크기도 텍스트와 동일하게 */
+  }
+
+  .info-item span:last-child {
+    color: #ffffff;   /* 텍스트 색상 흰색 통일 */
+    font-size: 13px;  /* 폰트 크기 통일 */
+    font-weight: 400;
+  }
+
+  /* 개별 아이디도 info-item 스타일 상속 */
+  #weather, #time, #battery {
+    composes: info-item;
+    /* 개별 스타일 모두 제거 - 통일됨 */
+  }
+
+  /* 날씨 설명 텍스트도 동일하게 */
+  .weather-desc {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 400;
   }
 
   /* 스크롤바 숨김 */
@@ -177,7 +203,7 @@
 
 <body>
 
-<!-- 📌 하단 오버레이 - 간격 최소화 -->
+<!-- 📌 하단 오버레이 -->
 <div id="overlay">
 
   <!-- 왼쪽: GPS + 수익 -->
@@ -207,22 +233,25 @@
 
   <!-- 오른쪽: 날씨 + 시간 + 배터리 + 로고 -->
   <div class="right-section">
-    <!-- 날씨 섹션 -->
-    <div class="section" id="weather">
-      <span>🌡️</span> <span>날씨: --°C</span>
+    <!-- 날씨 섹션 - info-item 클래스 추가 -->
+    <div class="info-item" id="weather">
+      <span>🌡️</span>
+      <span>날씨: --°C</span>
     </div>
     
-    <!-- 시간 섹션 -->
-    <div class="section" id="time">
-      <span>🕐</span> <span>시간: --:--</span>
+    <!-- 시간 섹션 - info-item 클래스 추가 -->
+    <div class="info-item" id="time">
+      <span>🕐</span>
+      <span>시간: --:--</span>
     </div>
     
-    <!-- 배터리 섹션 -->
-    <div class="section" id="battery">
-      <span>🔋</span> <span>배터리: --%</span>
+    <!-- 배터리 섹션 - info-item 클래스 추가 -->
+    <div class="info-item" id="battery">
+      <span>🔋</span>
+      <span>배터리: --%</span>
     </div>
 
-    <!-- 플랫폼 로고 섹션 - 간격 최소화 -->
+    <!-- 플랫폼 로고 섹션 -->
     <div class="section" style="gap: 2px;">
       <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png" alt="숲" title="숲" />
       <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png" alt="치지직" title="치지직" />
@@ -233,7 +262,6 @@
 
 </div>
 
-<!-- JavaScript 부분은 동일하게 유지 (생략하지 않고 전체 복사해서 사용) -->
 <script>
 /* =========================
     Firebase 설정
@@ -411,7 +439,7 @@ setInterval(() => {
 }, 1000);
 
 /* =========================
-    날씨 업데이트
+    날씨 업데이트 (통일된 스타일 유지)
 ========================= */
 async function updateWeather() {
   const url =
@@ -426,11 +454,17 @@ async function updateWeather() {
     const temp = Math.round(data.main.temp);
     const description = data.weather[0]?.description || '';
     
-    document.getElementById("weather").innerHTML =
-      `<span>🌡️</span> <span>날씨: ${temp}°C ${description}</span>`;
+    // info-item 구조 유지하면서 날씨 설명 추가
+    const weatherElement = document.getElementById("weather");
+    if (weatherElement) {
+      weatherElement.innerHTML = `<span>🌡️</span> <span>날씨: ${temp}°C ${description}</span>`;
+    }
   } catch (e) {
     console.error('날씨 업데이트 실패:', e);
-    document.getElementById("weather").innerHTML = "<span>🌡️</span> <span>날씨: --°C</span>";
+    const weatherElement = document.getElementById("weather");
+    if (weatherElement) {
+      weatherElement.innerHTML = `<span>🌡️</span> <span>날씨: --°C</span>`;
+    }
   }
 }
 
@@ -438,7 +472,7 @@ updateWeather();
 setInterval(updateWeather, 600000);
 
 /* =========================
-    시간 업데이트
+    시간 업데이트 (통일된 스타일 유지)
 ========================= */
 function updateTime() {
   const now = new Date();
@@ -447,30 +481,37 @@ function updateTime() {
   const ampm = hours >= 12 ? "오후" : "오전";
   hours = hours % 12 || 12;
 
-  document.getElementById("time").innerHTML =
-    `<span>🕐</span> <span>시간: ${ampm} ${hours}:${minutes}</span>`;
+  const timeElement = document.getElementById("time");
+  if (timeElement) {
+    timeElement.innerHTML = `<span>🕐</span> <span>시간: ${ampm} ${hours}:${minutes}</span>`;
+  }
 }
 
 updateTime();
 setInterval(updateTime, 1000);
 
 /* =========================
-    배터리 업데이트
+    배터리 업데이트 (통일된 스타일 유지)
 ========================= */
 if (navigator.getBattery) {
   navigator.getBattery().then((battery) => {
     function updateBattery() {
       const level = Math.round(battery.level * 100);
       const charging = battery.charging ? '⚡' : '🔋';
-      document.getElementById("battery").innerHTML =
-        `<span>${charging}</span> <span>배터리: ${level}%</span>`;
+      const batteryElement = document.getElementById("battery");
+      if (batteryElement) {
+        batteryElement.innerHTML = `<span>${charging}</span> <span>배터리: ${level}%</span>`;
+      }
     }
     battery.addEventListener("levelchange", updateBattery);
     battery.addEventListener("chargingchange", updateBattery);
     updateBattery();
   });
 } else {
-  document.getElementById("battery").innerHTML = "<span>🔋</span> <span>배터리: N/A</span>";
+  const batteryElement = document.getElementById("battery");
+  if (batteryElement) {
+    batteryElement.innerHTML = `<span>🔋</span> <span>배터리: N/A</span>`;
+  }
 }
 
 /* =========================
@@ -480,7 +521,7 @@ setTimeout(() => {
   loadRevenueData();
 }, 1000);
 
-console.log('프랭크 오버레이 통합 완료 (간격 최소화)');
+console.log('프랭크 오버레이 통합 완료 (날씨/시간/배터리 폰트 통일)');
 </script>
 
 </body>
