@@ -6,371 +6,69 @@
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: transparent;
-    color: white;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: "Pretendard", sans-serif;
+  background: transparent;
+  color: white;
+}
 
-  /* 하단바 */
-  #overlay {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    height: 38px;
-    background: rgba(0, 0, 0, 0.70);
-    backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 25px;
-    font-size: 15px;
-    padding: 0 15px;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-  }
+#overlay {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 38px;
+  background: rgba(0,0,0,0.70);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 25px;
+  font-size: 15px;
+  padding: 0 15px;
+}
 
-  .section {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-  }
+.section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-  .icon {
-    height: 20px;
-    opacity: 0.9;
-    transition: opacity 0.3s ease;
-  }
+.icon {
+  height: 20px;
+}
 
-  .icon:hover {
-    opacity: 1;
-  }
+#distance {
+  font-weight: 600;
+  color: #00ff88;
+}
 
-  /* 거리 강조 */
-  #distance {
-    font-weight: 600;
-    color: #00ff88;
-    text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
-  }
-
-  /* 상태 표시 */
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #4CAF50;
-    display: inline-block;
-    margin-right: 4px;
-    animation: pulse 2s infinite;
-  }
-
-  .status-dot.connecting {
-    background: #FF9800;
-  }
-
-  .status-dot.error {
-    background: #F44336;
-  }
-
-  @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-  }
-
-  /* 반응형 */
-  @media (max-width: 768px) {
-    #overlay {
-      gap: 15px;
-      font-size: 13px;
-    }
-    .icon {
-      height: 18px;
-    }
-  }
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4CAF50;
+}
 </style>
 </head>
 
 <body>
 
-<!-- 📌 하단 오버레이 -->
 <div id="overlay">
 
-  <div class="section" id="distance">
-    <span class="status-dot connecting"></span>
-    이동거리: 0.00 km
-  </div>
-  <div class="section" id="weather">🌡️ 날씨: --°C</div>
-  <div class="section" id="time">🕐 시간: --:--</div>
-  <div class="section" id="battery">🔋 배터리: --%</div>
-
-<!-- 플랫폼 로고 (GitHub Raw URL - 4개) -->
-  <div class="section">
-    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png" alt="숲" title="숲" />
-    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png" alt="치지직" title="치지직" />
-    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%ED%8A%B8%EC%9C%84%EC%B9%98%EB%A1%9C%EA%B3%A0.png" alt="Twitch" title="Twitch" />
-    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8A%9C%EB%B8%8C%EB%A1%9C%EA%B3%A0.png" alt="YouTube" title="YouTube" />
-  </div>
+<div class="section" id="distance">
+<span class="status-dot"></span>
+이동거리: 0.00 km
 </div>
 
-<script>
-/* =========================
-    기본 설정
-========================= */
-const PULL_KEY = "zeoeyze9htbyx455";
-const WEATHER_API = "3a4a39b054762e36581605681026ed35";
+<div class="section" id="weather">🌡️ 날씨: --°C</div>
 
-/* =========================
-    이동거리 계산 (지도 코드에서 검증된 방식)
-========================= */
-let totalDistance = 0;
-let previousLocation = null;
-let lastUpdateTime = 0;
-const GPS_TIMEOUT = 610000; // 610초 동안 신호 없으면 리셋
+<div class="section" id="time">🕐 시간: --:--</div>
 
-// Haversine 공식 (지도 코드와 동일)
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // 지구 반지름 (미터)
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
+<div class="section" id="battery">🔋 배터리: --%</div>
 
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c; // 미터 단위로 반환
-}
+<div class="section">
 
-/* =========================
-    상태 표시 업데이트
-========================= */
-function updateStatus(status) {
-  const dot = document.querySelector('.status-dot');
-  if (dot) {
-    dot.className = 'status-dot';
-    if (status) {
-      dot.classList.add(status);
-    }
-  }
-}
-
-/* =========================
-    거리 초기화 함수
-========================= */
-function resetDistance() {
-  totalDistance = 0;
-  previousLocation = null;
-  console.log('거리 초기화됨');
-  updateDistanceDisplay();
-}
-
-/* =========================
-    거리 표시 업데이트
-========================= */
-function updateDistanceDisplay() {
-  const distanceEl = document.getElementById('distance');
-  distanceEl.innerHTML = 
-    '<span class="status-dot"></span>이동거리: ' + totalDistance.toFixed(2) + ' km';
-  updateStatus('');
-}
-
-/* =========================
-    RealtimeIRL GPS 수신 (검증된 코드)
-========================= */
-try {
-  RealtimeIRL.forPullKey(PULL_KEY).addLocationListener((location) => {
-    const now = Date.now();
-    console.log('위치 수신:', location);
-    
-    // GPS 신호가 10초 이상 끊겼다가 다시 들어오면 리셋
-    if (lastUpdateTime > 0 && (now - lastUpdateTime) > GPS_TIMEOUT) {
-      console.log('⚠️ GPS 신호 끊김 감지 - 거리 리셋');
-      resetDistance();
-    }
-    
-    lastUpdateTime = now;
-    
-    if (location.latitude && location.longitude) {
-      // 이전 위치가 있으면 거리 계산
-      if (previousLocation) {
-        const distance = calculateDistance(
-          previousLocation.latitude, 
-          previousLocation.longitude,
-          location.latitude, 
-          location.longitude
-        );
-        
-        // 미터를 킬로미터로 변환
-        totalDistance += distance / 1000;
-        
-        console.log(`이동: ${distance.toFixed(2)}m, 총: ${totalDistance.toFixed(2)}km`);
-      }
-      
-      // 현재 위치 저장
-      previousLocation = location;
-      
-      // 거리 표시 업데이트
-      updateDistanceDisplay();
-      
-      // 상태 업데이트
-      updateStatus('');
-    } else {
-      console.warn('유효하지 않은 위치 데이터');
-      updateStatus('error');
-    }
-  });
-
-  console.log('RealtimeIRL 연결 시작');
-  updateStatus('connecting');
-
-} catch (error) {
-  console.error('RealtimeIRL 오류:', error);
-  document.getElementById('distance').innerHTML =
-    '<span class="status-dot error"></span>이동거리: 연결 실패';
-  updateStatus('error');
-}
-
-/* =========================
-    GPS 신호 체크 (1초마다)
-========================= */
-setInterval(() => {
-  if (lastUpdateTime > 0) {
-    const timeSinceLastUpdate = Date.now() - lastUpdateTime;
-    
-    if (timeSinceLastUpdate > GPS_TIMEOUT) {
-      console.log('⚠️ GPS 신호 없음 - 거리 리셋');
-      resetDistance();
-      lastUpdateTime = 0; // 다시 체크하지 않도록
-      updateStatus('error');
-      
-      const distanceEl = document.getElementById('distance');
-      distanceEl.innerHTML = 
-        '<span class="status-dot error"></span>이동거리: GPS 신호 없음';
-    }
-  }
-}, 1000);
-
-/* =========================
-    날씨 업데이트
-========================= */
-async function updateWeather() {
-  const url =
-    "https://api.openweathermap.org/data/2.5/weather?q=Sejong,KR&appid=" +
-    WEATHER_API +
-    "&units=metric&lang=kr";
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    const temp = Math.round(data.main.temp);
-    const description = data.weather[0]?.description || '';
-    
-    document.getElementById("weather").innerHTML =
-      `🌡️ 날씨: ${temp}°C ${description}`;
-  } catch (e) {
-    console.error('날씨 업데이트 실패:', e);
-    document.getElementById("weather").innerHTML = "🌡️ 날씨: --°C";
-  }
-}
-
-updateWeather();
-setInterval(updateWeather, 600000); // 10분마다
-
-
-/* =========================
-    시간 (오전/오후)
-========================= */
-function updateTime() {
-  const now = new Date();
-  let hours = now.getHours();
-  const minutes = now.getMinutes().toString().padStart(2, "0");
-  const ampm = hours >= 12 ? "오후" : "오전";
-  hours = hours % 12 || 12;
-
-  document.getElementById("time").innerHTML =
-    "🕐 시간: " + ampm + " " + hours + ":" + minutes;
-}
-
-updateTime();
-setInterval(updateTime, 1000);
-
-
-/* =========================
-    배터리
-========================= */
-if (navigator.getBattery) {
-  navigator.getBattery().then((battery) => {
-    function updateBattery() {
-      const level = Math.round(battery.level * 100);
-      const charging = battery.charging ? '⚡' : '🔋';
-      document.getElementById("battery").innerHTML =
-        charging + " 배터리: " + level + "%";
-    }
-    battery.addEventListener("levelchange", updateBattery);
-    battery.addEventListener("chargingchange", updateBattery);
-    updateBattery();
-  });
-} else {
-  document.getElementById("battery").innerHTML = "🔋 배터리: N/A";
-}
-
-
-/* =========================
-    디버깅 (5초마다)
-========================= */
-setInterval(() => {
-  const timeSinceUpdate = lastUpdateTime > 0 ? Math.floor((Date.now() - lastUpdateTime) / 1000) : 0;
-  console.log(`[상태] 총 거리: ${totalDistance.toFixed(3)}km | 이전위치: ${previousLocation ? 'O' : 'X'} | 마지막 업데이트: ${timeSinceUpdate}초 전`);
-}, 5000);
-
-console.log('프랭크 오버레이 초기화 완료');
-</script>
-
-</body>
-</html> 이코드와 <!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>관리 페이지</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="firebase.js"></script>
-    <style>
-        body { font-family: sans-serif; background: #222; color: white; text-align: center; padding: 20px; }
-        input { padding: 8px; margin: 5px; font-size: 16px; }
-        button { padding: 10px 20px; font-size: 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
-        button:hover { background: #45a049; }
-    </style>
-</head>
-<body>
-    <h1>OBS 오버레이 데이터 입력</h1>
-    <input id="daily" placeholder="일 수익" type="text"><br>
-    <input id="weekly" placeholder="월 수익" type="text"><br>
-    <input id="monthly" placeholder="년 수익" type="text"><br>
-    <button onclick="saveData()">저장</button>
-
-    <script>
-        function saveData() {
-            let daily = document.getElementById('daily').value;
-            let weekly = document.getElementById('weekly').value;
-            let monthly = document.getElementById('monthly').value;
-
-            db.ref('overlayData').set({
-                daily: daily,
-                weekly: weekly,
-                monthly: monthly
-            }).then(() => {
-                alert("저장 완료!");
-            }).catch(err => {
-                console.error("저장 실패:", err);
-            });
-        }
-    </script>
-</body>
-</html> 이코드를 합치고 싶어요.
+<img class="icon" src="https://raw.githubusercontent.
