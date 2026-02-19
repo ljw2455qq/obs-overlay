@@ -1,31 +1,76 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-8"/>
 
 <title>프랭크 오버레이</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getDatabase,
+ref,
+onValue
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+
+const firebaseConfig={
+
+apiKey:"AIzaSyA5hMmN9QFgdFtaA5gicS_pj-blu_jJdvE",
+
+authDomain:"rider-bf48b.firebaseapp.com",
+
+databaseURL:"https://rider-bf48b-default-rtdb.firebaseio.com",
+
+projectId:"rider-bf48b",
+
+storageBucket:"rider-bf48b.firebasestorage.app",
+
+messagingSenderId:"1026929653322",
+
+appId:"1:1026929653322:web:b90541cccba5b4186198b3"
+
+};
+
+
+const app=initializeApp(firebaseConfig);
+
+const db=getDatabase(app);
+
+
+onValue(ref(db,"battery"), snap=>{
+
+if(snap.exists()){
+
+document.getElementById("battery").innerText=
+
+"🔋 "+snap.val().level+"%";
+
+}
+
+});
+
+</script>
+
+
 <style>
 
-html, body {
+html,body{
 
 margin:0;
 padding:0;
-
 background:transparent;
-
-font-family: Pretendard, sans-serif;
-
+font-family:Pretendard;
 overflow:hidden;
-
 color:white;
 
 }
 
-
-/* 전체 위치 */
 
 #overlay{
 
@@ -54,8 +99,6 @@ font-size:14px;
 }
 
 
-/* GPS 색상 */
-
 #distance{
 
 color:#00ff88;
@@ -65,16 +108,12 @@ font-weight:bold;
 }
 
 
-/* 아이콘 */
-
 .icon{
 
 height:18px;
 
 }
 
-
-/* 상태 점 */
 
 .status-dot{
 
@@ -95,6 +134,7 @@ display:inline-block;
 
 </head>
 
+
 <body>
 
 
@@ -105,11 +145,7 @@ display:inline-block;
 
 <span class="status-dot"></span>
 
-<span id="distance">
-
-0.00 km
-
-</span>
+<span id="distance">0.00 km</span>
 
 </div>
 
@@ -138,16 +174,16 @@ display:inline-block;
 <div>
 
 <img class="icon"
-src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png">
+src="숲로고.png">
 
 <img class="icon"
-src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png">
+src="치지직로고.png">
 
 <img class="icon"
-src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%ED%8A%B8%EC%9C%84%EC%B9%98%EB%A1%9C%EA%B3%A0.png">
+src="트위치로고.png">
 
 <img class="icon"
-src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8A%9C%EB%B8%8C%EB%A1%9C%EA%B3%A0.png">
+src="유튜브로고.png">
 
 </div>
 
@@ -159,12 +195,8 @@ src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8
 <script>
 
 
-/* Pull key */
-
 const PULL_KEY="zeoeyze9htbyx455";
 
-
-/* 거리 */
 
 let totalDistance=0;
 
@@ -195,7 +227,6 @@ loc.longitude
 
 )/1000;
 
-
 }
 
 
@@ -212,7 +243,6 @@ totalDistance.toFixed(2)+" km";
 
 
 });
-
 
 
 
@@ -236,7 +266,6 @@ Math.cos(φ1)*Math.cos(φ2)*
 
 Math.sin(Δλ/2)**2;
 
-
 const c=
 
 2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
@@ -254,7 +283,6 @@ const WEATHER_API="3a4a39b054762e36581605681026ed35";
 
 async function weather(){
 
-
 const r=
 
 await fetch(
@@ -262,7 +290,6 @@ await fetch(
 "https://api.openweathermap.org/data/2.5/weather?q=Sejong&appid="+WEATHER_API+"&units=metric"
 
 );
-
 
 const d=await r.json();
 
@@ -274,7 +301,6 @@ document
 .innerText=
 
 "🌡️ "+Math.round(d.main.temp)+"°C";
-
 
 }
 
@@ -301,39 +327,8 @@ document
 
 
 
-/* 배터리 */
-
-navigator
-
-.getBattery()
-
-.then(b=>{
-
-
-function u(){
-
-document
-
-.getElementById("battery")
-
-.innerText=
-
-"🔋 "+Math.round(b.level*100)+"%";
-
-}
-
-
-b.addEventListener("levelchange",u);
-
-u();
-
-
-});
-
-
 </script>
 
 
 </body>
-
 </html>
