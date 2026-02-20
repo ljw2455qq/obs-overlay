@@ -1,90 +1,99 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
 <meta charset="utf-8">
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<title>Battery Send</title>
 </head>
+<body style="background:black;color:white;font-size:30px;">
 
-<body>
+Battery Send...
 
-<script>
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
+import {
+getDatabase,
+ref,
+set
+}
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+
+// firebase 설정
 
 const firebaseConfig = {
 
-  apiKey: "AIzaSyA5hMmN9QFgdFtaA5gicS_pj-blu_jJdvE",
+apiKey: "AIzaSyA5hMmN9QFgdFtaA5gicS_pj-blu_jJdvE",
 
-  databaseURL: "https://rider-bf48b-default-rtdb.firebaseio.com"
+authDomain: "rider-bf48b.firebaseapp.com",
+
+databaseURL: "https://rider-bf48b-default-rtdb.firebaseio.com",
+
+projectId: "rider-bf48b",
+
+storageBucket: "rider-bf48b.firebasestorage.app",
+
+messagingSenderId: "1026929653322",
+
+appId: "1:1026929653322:web:b90541cccba5b4186198b3"
 
 };
 
-firebase.initializeApp(firebaseConfig);
 
-let battery = null;
+const app =
+initializeApp(firebaseConfig);
 
-async function initBattery() {
-
-  battery = await navigator.getBattery();
-
-  updateBattery();
-
-  battery.onlevelchange = updateBattery;
-
-  battery.onchargingchange = updateBattery;
-
-}
-
-function updateBattery() {
-
-  if (!battery) return;
-
-  const level = Math.floor(battery.level * 100);
-
-  const charging = battery.charging;
-
-  firebase.database().ref("battery").set({
-
-    level: level,
-
-    charging: charging,
-
-    time: Date.now()
-
-  });
-
-  console.log("전송:", level);
-
-}
-
-setInterval(updateBattery, 10000);
+const db =
+getDatabase(app);
 
 
-// 🔥 핵심: 절전모드 복귀 감지
 
-document.addEventListener("visibilitychange", () => {
 
-  if (document.visibilityState === "visible") {
+// 배터리 전송
 
-    console.log("복귀 감지 → 재초기화");
+navigator.getBattery()
+.then(battery=>{
 
-    initBattery();
 
-  }
+function send(){
 
-});
 
-window.addEventListener("pageshow", () => {
+set(
+ref(db,"battery"),
+{
 
-  console.log("pageshow → 재초기화");
+level:
+Math.floor(
+battery.level*100
+),
 
-  initBattery();
+charging:
+battery.charging,
+
+timestamp:
+Date.now()
 
 });
 
 
-// 최초 실행
+console.log(
+"Battery send:",
+battery.level*100
+);
 
-initBattery();
+
+}
+
+
+send();
+
+setInterval(send,10000);
+
+
+});
+
 
 </script>
 
