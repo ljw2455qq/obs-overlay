@@ -13,21 +13,21 @@
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   }
 
-  /* 전체 오버레이 - 간격 최소화 */
+  /* 전체 오버레이 */
   #overlay {
     position: fixed;
     bottom: 20px;
     right: 20px;
     display: flex;
     align-items: center;
-    gap: 8px; /* 간격 대폭 축소 (16px → 8px) */
+    gap: 8px;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
-    padding: 6px 12px; /* 패딩 축소 (8px 18px → 6px 12px) */
+    padding: 6px 12px;
     border-radius: 30px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-    font-size: 14px; /* 폰트 크기 약간 축소 */
+    font-size: 14px;
     z-index: 9999;
   }
 
@@ -36,33 +36,35 @@
     color: #7df9ff;
     font-weight: 700;
     text-shadow: 0 0 8px rgba(125, 249, 255, 0.5);
-    margin-right: 2px; /* 오른쪽 여백 최소화 */
+    margin-right: 2px;
   }
 
-  /* 날씨, 시간 - 간격 축소 */
+  /* 날씨, 시간 */
   #weather, #time {
     display: flex;
     align-items: center;
-    gap: 2px; /* 아이콘과 텍스트 간격 축소 */
+    gap: 2px;
   }
 
-  /* 배터리 컨테이너 - 간격 축소 */
+  /* 배터리 컨테이너 */
   .battery-container {
     display: flex;
     align-items: center;
-    gap: 3px; /* 배터리 아이콘과 텍스트 간격 축소 */
+    gap: 3px;
+    position: relative;
   }
 
-  /* 배터리 아이콘 - 크기 약간 축소 */
+  /* 배터리 아이콘 */
   #batteryIcon {
-    width: 24px; /* 28px → 24px */
-    height: 12px; /* 14px → 12px */
+    width: 24px;
+    height: 12px;
     border: 1.5px solid rgba(255, 255, 255, 0.9);
     border-radius: 3px;
     position: relative;
     background: rgba(0, 0, 0, 0.3);
   }
 
+  /* 배터리 잔량 */
   #batteryFill {
     height: 100%;
     width: 0%;
@@ -71,52 +73,58 @@
     border-radius: 1px;
   }
 
+  /* 충전 중 번개 표시 - 정중앙 큰 번개 */
   #batteryBolt {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* 정중앙 정렬 */
     width: 100%;
     height: 100%;
     display: none;
     align-items: center;
     justify-content: center;
-    font-size: 9px; /* 번개 크기 축소 */
+    font-size: 16px; /* 번개 크기 대폭 증가 (9px → 16px) */
     font-weight: bold;
     color: #ffd700;
-    text-shadow: 0 0 5px rgba(255, 215, 0, 0.8);
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 2px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.5);
+    background: transparent; /* 배경 제거 */
+    pointer-events: none; /* 클릭 방지 */
+    line-height: 1;
+    z-index: 10;
   }
 
+  /* 배터리 뚜껑 */
   #batteryCap {
     position: absolute;
-    right: -4px; /* 위치 조정 */
+    right: -4px;
     top: 2.5px;
-    width: 2px; /* 3px → 2px */
-    height: 5px; /* 6px → 5px */
+    width: 2px;
+    height: 5px;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 1px;
   }
 
+  /* 배터리 텍스트 */
   #batteryText {
-    min-width: 35px; /* 40px → 35px */
+    min-width: 35px;
     font-weight: 500;
-    font-size: 13px; /* 폰트 크기 통일 */
+    font-size: 13px;
   }
 
-  /* 로고 컨테이너 - 간격 축소 */
+  /* 로고 컨테이너 */
   .logo-container {
     display: flex;
     align-items: center;
-    gap: 3px; /* 로고 간격 축소 (6px → 3px) */
+    gap: 3px;
     padding-left: 4px;
     border-left: 1px solid rgba(255, 255, 255, 0.2);
-    margin-left: 2px; /* 왼쪽 여백 최소화 */
+    margin-left: 2px;
   }
 
-  /* 로고 아이콘 - 크기 약간 축소 */
+  /* 로고 아이콘 */
   .icon {
-    height: 16px; /* 18px → 16px */
+    height: 16px;
     width: auto;
     opacity: 0.8;
     transition: all 0.2s ease;
@@ -159,7 +167,6 @@
 </head>
 <body>
 
-<!-- 📌 간격 최소화된 오버레이 -->
 <div id="overlay">
 
   <!-- GPS 거리 -->
@@ -251,8 +258,35 @@ function updateBattery(level, charging) {
   batteryText.innerText = level + '%';
   batteryFill.style.width = level + '%';
   batteryFill.style.background = getBatteryColor(level);
-  batteryBolt.style.display = charging ? 'flex' : 'none';
+  
+  // 충전 중일 때 번개 표시
+  if (charging) {
+    batteryBolt.style.display = 'flex';
+    // 충전 중일 때 번개 애니메이션 추가
+    batteryBolt.style.animation = 'boltPulse 1s infinite';
+  } else {
+    batteryBolt.style.display = 'none';
+    batteryBolt.style.animation = 'none';
+  }
 }
+
+// 번개 애니메이션을 스타일에 동적으로 추가
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes boltPulse {
+    0%, 100% { 
+      opacity: 1; 
+      transform: translate(-50%, -50%) scale(1);
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+    50% { 
+      opacity: 0.8; 
+      transform: translate(-50%, -50%) scale(1.2);
+      text-shadow: 0 0 15px rgba(255, 215, 0, 1), 0 0 30px rgba(255, 215, 0, 0.8);
+    }
+  }
+`;
+document.head.appendChild(style);
 
 /* 배터리 색상 */
 function getBatteryColor(level) {
@@ -404,7 +438,7 @@ function getWeatherEmoji(iconCode) {
 updateWeather();
 setInterval(updateWeather, 600000);
 
-console.log('✅ 프랭크 오버레이 로드 완료 (간격 최소화)');
+console.log('✅ 프랭크 오버레이 로드 완료 (배터리 번개 정중앙)');
 </script>
 
 </body>
