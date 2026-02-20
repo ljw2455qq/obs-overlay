@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 
-<title>프랭크 오버레이 완성본</title>
+<title>프랭크 오버레이</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
@@ -70,6 +70,8 @@ width:50%;
 
 background:#00ff00;
 
+transition:0.3s;
+
 }
 
 
@@ -108,7 +110,6 @@ background:white;
 height:18px;
 
 }
-
 
 </style>
 
@@ -169,7 +170,6 @@ height:18px;
 
 
 </div>
-
 
 
 
@@ -257,9 +257,42 @@ batteryText.innerText=level+"%";
 
 batteryFill.style.width=level+"%";
 
+batteryFill.style.background=getBatteryColor(level);
+
 batteryBolt.style.display=charging?"flex":"none";
 
 }
+
+
+
+
+/* 색상 변경 */
+
+function getBatteryColor(level){
+
+
+if(level>=90) return "#00ff00";
+
+if(level>=80) return "#33ff00";
+
+if(level>=70) return "#66ff00";
+
+if(level>=60) return "#99ff00";
+
+if(level>=50) return "#ccff00";
+
+if(level>=40) return "#ffff00";
+
+if(level>=30) return "#ffcc00";
+
+if(level>=20) return "#ff9900";
+
+if(level>=10) return "#ff3300";
+
+return "#ff0000";
+
+}
+
 
 
 
@@ -329,6 +362,33 @@ time.innerText=
 "🕐 "+new Date().toLocaleTimeString();
 
 },1000);
+
+
+
+/* 날씨 */
+
+const WEATHER_API="3a4a39b054762e36581605681026ed35";
+
+
+async function weather(){
+
+const r=
+await fetch(
+
+"https://api.openweathermap.org/data/2.5/weather?q=Sejong&appid="+WEATHER_API+"&units=metric"
+
+);
+
+const d=await r.json();
+
+weather.innerText=
+"🌡️ "+Math.round(d.main.temp)+"°C";
+
+}
+
+weather();
+
+setInterval(weather,600000);
 
 
 
