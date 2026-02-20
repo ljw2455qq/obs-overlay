@@ -1,69 +1,92 @@
 <!DOCTYPE html>
 <html>
+<head>
+<meta charset="utf-8">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+
 <body>
 
-Battery Send
+<script>
 
-<script type="module">
+const firebaseConfig = {
 
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  apiKey: "AIzaSyA5hMmN9QFgdFtaA5gicS_pj-blu_jJdvE",
 
-import {
-getDatabase,
-ref,
-set
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-
-const firebaseConfig={
-
-apiKey:"AIzaSyA5hMmN9QFgdFtaA5gicS_pj-blu_jJdvE",
-
-authDomain:"rider-bf48b.firebaseapp.com",
-
-databaseURL:"https://rider-bf48b-default-rtdb.firebaseio.com",
-
-projectId:"rider-bf48b",
-
-storageBucket:"rider-bf48b.firebasestorage.app",
-
-messagingSenderId:"1026929653322",
-
-appId:"1:1026929653322:web:b90541cccba5b4186198b3"
+  databaseURL: "https://rider-bf48b-default-rtdb.firebaseio.com"
 
 };
 
+firebase.initializeApp(firebaseConfig);
 
-const app=initializeApp(firebaseConfig);
+let battery = null;
 
-const db=getDatabase(app);
+async function initBattery() {
 
+  battery = await navigator.getBattery();
 
-const battery=await navigator.getBattery();
+  updateBattery();
 
+  battery.onlevelchange = updateBattery;
 
-function send(){
-
-set(ref(db,"battery"),{
-
-level:Math.round(battery.level*100),
-
-time:Date.now()
-
-});
+  battery.onchargingchange = updateBattery;
 
 }
 
+function updateBattery() {
 
-send();
+  if (!battery) return;
 
-setInterval(send,60000);
+  const level = Math.floor(battery.level * 100);
 
+  const charging = battery.charging;
+
+  firebase.database().ref("battery").set({
+
+    level: level,
+
+    charging: charging,
+
+    time: Date.now()
+
+  });
+
+  console.log("전송:", level);
+
+}
+
+setInterval(updateBattery, 10000);
+
+
+// 🔥 핵심: 절전모드 복귀 감지
+
+document.addEventListener("visibilitychange", () => {
+
+  if (document.visibilityState === "visible") {
+
+    console.log("복귀 감지 → 재초기화");
+
+    initBattery();
+
+  }
+
+});
+
+window.addEventListener("pageshow", () => {
+
+  console.log("pageshow → 재초기화");
+
+  initBattery();
+
+});
+
+
+// 최초 실행
+
+initBattery();
 
 </script>
-
 
 </body>
 </html>
