@@ -370,25 +370,22 @@ time.innerText=
 const WEATHER_API="3a4a39b054762e36581605681026ed35";
 
 
-async function weather(){
+async function weatherUpdate(){
 
-const r=
-await fetch(
-
+const r=await fetch(
 "https://api.openweathermap.org/data/2.5/weather?q=Sejong&appid="+WEATHER_API+"&units=metric"
-
 );
 
 const d=await r.json();
 
-weather.innerText=
+document.getElementById("weather").innerText =
 "🌡️ "+Math.round(d.main.temp)+"°C";
 
 }
 
-weather();
+weatherUpdate();
 
-setInterval(weather,600000);
+setInterval(weatherUpdate,600000);
 
 
 
