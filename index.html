@@ -1,22 +1,159 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"/>
+<meta charset="utf-8">
 
-<title>프랭크 오버레이</title>
+<style>
 
-<script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
+body{
+
+margin:0;
+background:transparent;
+color:white;
+
+}
+
+
+/* 위치 */
+
+#batteryBox{
+
+position:fixed;
+
+bottom:10px;
+
+right:20px;
+
+display:flex;
+
+align-items:center;
+
+gap:6px;
+
+background:rgba(0,0,0,0.6);
+
+padding:6px 10px;
+
+border-radius:10px;
+
+}
+
+
+/* 배터리 */
+
+#batteryIcon{
+
+width:28px;
+height:14px;
+
+border:2px solid white;
+
+border-radius:3px;
+
+position:relative;
+
+}
+
+
+/* 채움 */
+
+#batteryFill{
+
+height:100%;
+
+width:50%;
+
+background:#00ff00;
+
+}
+
+
+/* 머리 */
+
+#batteryCap{
+
+position:absolute;
+
+right:-5px;
+
+top:3px;
+
+width:3px;
+
+height:6px;
+
+background:white;
+
+}
+
+
+/* 번개 */
+
+#batteryBolt{
+
+position:absolute;
+
+width:100%;
+height:100%;
+
+display:none;
+
+align-items:center;
+justify-content:center;
+
+font-size:10px;
+
+}
+
+
+</style>
+
+</head>
+<body>
+
+
+<div id="batteryBox">
+
+
+<div id="batteryIcon">
+
+<div id="batteryFill"></div>
+
+<div id="batteryBolt">⚡</div>
+
+<div id="batteryCap"></div>
+
+</div>
+
+
+<div id="batteryText">
+
+--%
+
+</div>
+
+
+</div>
+
+
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
 import {
+
 getDatabase,
 ref,
 onValue
+
 }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+
 
 
 const firebaseConfig={
@@ -38,297 +175,99 @@ appId:"1:1026929653322:web:b90541cccba5b4186198b3"
 };
 
 
-const app=initializeApp(firebaseConfig);
 
-const db=getDatabase(app);
+const app=
+initializeApp(firebaseConfig);
 
+const db=
+getDatabase(app);
 
-onValue(ref(db,"battery"), snap=>{
 
-if(snap.exists()){
 
-document.getElementById("battery").innerText=
 
-"🔋 "+snap.val().level+"%";
+onValue(
+ref(db,"battery"),
+snap=>{
 
-}
 
-});
+if(!snap.exists()) return;
 
-</script>
 
+const data=snap.val();
 
-<style>
 
-html,body{
-
-margin:0;
-padding:0;
-background:transparent;
-font-family:Pretendard;
-overflow:hidden;
-color:white;
-
-}
-
-
-#overlay{
-
-position:fixed;
-
-bottom:10px;
-
-right:20px;
-
-display:flex;
-
-align-items:center;
-
-gap:15px;
-
-background:rgba(0,0,0,0.6);
-
-padding:6px 14px;
-
-border-radius:20px;
-
-backdrop-filter:blur(6px);
-
-font-size:14px;
-
-}
-
-
-#distance{
-
-color:#00ff88;
-
-font-weight:bold;
-
-}
-
-
-.icon{
-
-height:18px;
-
-}
-
-
-.status-dot{
-
-width:8px;
-height:8px;
-
-border-radius:50%;
-
-background:#00ff88;
-
-margin-right:6px;
-
-display:inline-block;
-
-}
-
-</style>
-
-</head>
-
-
-<body>
-
-
-<div id="overlay">
-
-
-<div>
-
-<span class="status-dot"></span>
-
-<span id="distance">0.00 km</span>
-
-</div>
-
-
-<div id="weather">
-
-🌡️ --
-
-</div>
-
-
-<div id="time">
-
-🕐 --
-
-</div>
-
-
-<div id="battery">
-
-🔋 --
-
-</div>
-
-
-<div>
-
-<img class="icon"
-src="숲로고.png">
-
-<img class="icon"
-src="치지직로고.png">
-
-<img class="icon"
-src="트위치로고.png">
-
-<img class="icon"
-src="유튜브로고.png">
-
-</div>
-
-
-</div>
-
-
-
-<script>
-
-
-const PULL_KEY="zeoeyze9htbyx455";
-
-
-let totalDistance=0;
-
-let prev=null;
-
-
-
-RealtimeIRL
-
-.forPullKey(PULL_KEY)
-
-.addLocationListener(loc=>{
-
-
-if(prev){
-
-totalDistance+=
-
-getDistance(
-
-prev.latitude,
-
-prev.longitude,
-
-loc.latitude,
-
-loc.longitude
-
-)/1000;
-
-}
-
-
-prev=loc;
-
-
-document
-
-.getElementById("distance")
-
-.innerText=
-
-totalDistance.toFixed(2)+" km";
-
-
-});
-
-
-
-function getDistance(lat1,lon1,lat2,lon2){
-
-const R=6371e3;
-
-const φ1=lat1*Math.PI/180;
-
-const φ2=lat2*Math.PI/180;
-
-const Δφ=(lat2-lat1)*Math.PI/180;
-
-const Δλ=(lon2-lon1)*Math.PI/180;
-
-const a=
-
-Math.sin(Δφ/2)**2+
-
-Math.cos(φ1)*Math.cos(φ2)*
-
-Math.sin(Δλ/2)**2;
-
-const c=
-
-2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-
-return R*c;
-
-}
-
-
-
-/* 날씨 */
-
-const WEATHER_API="3a4a39b054762e36581605681026ed35";
-
-
-async function weather(){
-
-const r=
-
-await fetch(
-
-"https://api.openweathermap.org/data/2.5/weather?q=Sejong&appid="+WEATHER_API+"&units=metric"
-
+updateBattery(
+data.level,
+data.charging
 );
 
-const d=await r.json();
+
+});
 
 
-document
 
-.getElementById("weather")
 
-.innerText=
 
-"🌡️ "+Math.round(d.main.temp)+"°C";
+function updateBattery(level,charging){
+
+const fill=
+document.getElementById("batteryFill");
+
+const text=
+document.getElementById("batteryText");
+
+const bolt=
+document.getElementById("batteryBolt");
+
+
+
+fill.style.width=
+level+"%";
+
+
+text.innerText=
+level+"%";
+
+
+
+bolt.style.display=
+charging?"flex":"none";
+
+
+
+// 색상
+
+let color;
+
+
+if(level<=10) color="#ff0000";
+
+else if(level<=20) color="#ff4000";
+
+else if(level<=30) color="#ff8000";
+
+else if(level<=40) color="#ffbf00";
+
+else if(level<=50) color="#ffff00";
+
+else if(level<=60) color="#bfff00";
+
+else if(level<=70) color="#80ff00";
+
+else if(level<=80) color="#40ff00";
+
+else if(level<=90) color="#00ff00";
+
+else color="#00ff40";
+
+
+fill.style.background=color;
+
 
 }
 
 
-weather();
-
-setInterval(weather,600000);
-
-
-
-/* 시간 */
-
-setInterval(()=>{
-
-document
-
-.getElementById("time")
-
-.innerText=
-
-"🕐 "+new Date().toLocaleTimeString();
-
-},1000);
-
-
-
 </script>
-
 
 </body>
 </html>
