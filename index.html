@@ -3,38 +3,48 @@
 <head>
 <meta charset="utf-8">
 
+<title>프랭크 오버레이 완성본</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
+
 <style>
 
 body{
-
 margin:0;
 background:transparent;
 color:white;
+font-family:Pretendard;
+}
+
+
+/* 전체 */
+
+#overlay{
+
+position:fixed;
+bottom:10px;
+right:20px;
+
+display:flex;
+align-items:center;
+
+gap:15px;
+
+background:rgba(0,0,0,0.6);
+
+padding:6px 14px;
+
+border-radius:20px;
 
 }
 
 
-/* 위치 */
+/* GPS */
 
-#batteryBox{
+#distance{
 
-position:fixed;
-
-bottom:10px;
-
-right:20px;
-
-display:flex;
-
-align-items:center;
-
-gap:6px;
-
-background:rgba(0,0,0,0.6);
-
-padding:6px 10px;
-
-border-radius:10px;
+color:#00ff88;
+font-weight:bold;
 
 }
 
@@ -43,24 +53,19 @@ border-radius:10px;
 
 #batteryIcon{
 
-width:28px;
-height:14px;
+width:26px;
+height:13px;
 
 border:2px solid white;
-
-border-radius:3px;
 
 position:relative;
 
 }
 
 
-/* 채움 */
-
 #batteryFill{
 
 height:100%;
-
 width:50%;
 
 background:#00ff00;
@@ -68,31 +73,9 @@ background:#00ff00;
 }
 
 
-/* 머리 */
-
-#batteryCap{
-
-position:absolute;
-
-right:-5px;
-
-top:3px;
-
-width:3px;
-
-height:6px;
-
-background:white;
-
-}
-
-
-/* 번개 */
-
 #batteryBolt{
 
 position:absolute;
-
 width:100%;
 height:100%;
 
@@ -106,13 +89,65 @@ font-size:10px;
 }
 
 
+#batteryCap{
+
+position:absolute;
+right:-5px;
+top:3px;
+
+width:3px;
+height:6px;
+
+background:white;
+
+}
+
+
+.icon{
+
+height:18px;
+
+}
+
+
 </style>
 
 </head>
 <body>
 
 
-<div id="batteryBox">
+<div id="overlay">
+
+
+<div>
+
+<span id="distance">
+
+0.00 km
+
+</span>
+
+</div>
+
+
+<div id="weather">
+
+🌡️ --
+
+</div>
+
+
+<div id="time">
+
+🕐 --
+
+</div>
+
+
+
+<!-- 배터리 -->
+
+<div style="display:flex;align-items:center;gap:5px;">
 
 
 <div id="batteryIcon">
@@ -137,23 +172,42 @@ font-size:10px;
 
 
 
+
+<div>
+
+<img class="icon"
+src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/숲로고.png">
+
+<img class="icon"
+src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/치지직로고.png">
+
+<img class="icon"
+src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/트위치로고.png">
+
+<img class="icon"
+src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/유튜브로고.png">
+
+</div>
+
+
+</div>
+
+
+
 <script type="module">
 
+
+/* Firebase */
 
 import { initializeApp }
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
 import {
-
 getDatabase,
 ref,
 onValue
-
 }
-
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-
 
 
 const firebaseConfig={
@@ -175,13 +229,9 @@ appId:"1:1026929653322:web:b90541cccba5b4186198b3"
 };
 
 
+const app=initializeApp(firebaseConfig);
 
-const app=
-initializeApp(firebaseConfig);
-
-const db=
-getDatabase(app);
-
+const db=getDatabase(app);
 
 
 
@@ -192,79 +242,94 @@ snap=>{
 
 if(!snap.exists()) return;
 
-
 const data=snap.val();
 
-
-updateBattery(
-data.level,
-data.charging
-);
+updateBattery(data.level,data.charging);
 
 
 });
 
 
 
-
-
 function updateBattery(level,charging){
 
-const fill=
-document.getElementById("batteryFill");
+batteryText.innerText=level+"%";
 
-const text=
-document.getElementById("batteryText");
+batteryFill.style.width=level+"%";
 
-const bolt=
-document.getElementById("batteryBolt");
-
-
-
-fill.style.width=
-level+"%";
-
-
-text.innerText=
-level+"%";
-
-
-
-bolt.style.display=
-charging?"flex":"none";
-
-
-
-// 색상
-
-let color;
-
-
-if(level<=10) color="#ff0000";
-
-else if(level<=20) color="#ff4000";
-
-else if(level<=30) color="#ff8000";
-
-else if(level<=40) color="#ffbf00";
-
-else if(level<=50) color="#ffff00";
-
-else if(level<=60) color="#bfff00";
-
-else if(level<=70) color="#80ff00";
-
-else if(level<=80) color="#40ff00";
-
-else if(level<=90) color="#00ff00";
-
-else color="#00ff40";
-
-
-fill.style.background=color;
-
+batteryBolt.style.display=charging?"flex":"none";
 
 }
+
+
+
+/* GPS */
+
+let totalDistance=0;
+let prev=null;
+
+
+RealtimeIRL
+.forPullKey("zeoeyze9htbyx455")
+.addLocationListener(loc=>{
+
+if(prev){
+
+totalDistance+=getDistance(
+prev.latitude,
+prev.longitude,
+loc.latitude,
+loc.longitude
+)/1000;
+
+}
+
+prev=loc;
+
+distance.innerText=
+totalDistance.toFixed(2)+" km";
+
+});
+
+
+
+function getDistance(lat1,lon1,lat2,lon2){
+
+const R=6371e3;
+
+const φ1=lat1*Math.PI/180;
+const φ2=lat2*Math.PI/180;
+
+const Δφ=(lat2-lat1)*Math.PI/180;
+const Δλ=(lon2-lon1)*Math.PI/180;
+
+const a=
+
+Math.sin(Δφ/2)**2+
+
+Math.cos(φ1)*Math.cos(φ2)*
+
+Math.sin(Δλ/2)**2;
+
+
+const c=
+2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+
+return R*c;
+
+}
+
+
+
+/* 시간 */
+
+setInterval(()=>{
+
+time.innerText=
+"🕐 "+new Date().toLocaleTimeString();
+
+},1000);
+
 
 
 </script>
