@@ -13,59 +13,56 @@
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   }
 
-  /* 전체 오버레이 */
+  /* 전체 오버레이 - 간격 최소화 */
   #overlay {
     position: fixed;
     bottom: 20px;
     right: 20px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px; /* 간격 대폭 축소 (16px → 8px) */
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
-    padding: 8px 18px;
+    padding: 6px 12px; /* 패딩 축소 (8px 18px → 6px 12px) */
     border-radius: 30px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-    font-size: 15px;
+    font-size: 14px; /* 폰트 크기 약간 축소 */
     z-index: 9999;
   }
 
-  /* GPS 거리 - 연한 하늘색 */
+  /* GPS 거리 */
   #distance {
     color: #7df9ff;
     font-weight: 700;
     text-shadow: 0 0 8px rgba(125, 249, 255, 0.5);
-    letter-spacing: 0.3px;
-    min-width: 80px;
+    margin-right: 2px; /* 오른쪽 여백 최소화 */
   }
 
-  /* 날씨, 시간 */
+  /* 날씨, 시간 - 간격 축소 */
   #weather, #time {
-    opacity: 0.95;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px; /* 아이콘과 텍스트 간격 축소 */
   }
 
-  /* 배터리 컨테이너 */
+  /* 배터리 컨테이너 - 간격 축소 */
   .battery-container {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 3px; /* 배터리 아이콘과 텍스트 간격 축소 */
   }
 
-  /* 배터리 아이콘 */
+  /* 배터리 아이콘 - 크기 약간 축소 */
   #batteryIcon {
-    width: 28px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.9);
+    width: 24px; /* 28px → 24px */
+    height: 12px; /* 14px → 12px */
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
     border-radius: 3px;
     position: relative;
     background: rgba(0, 0, 0, 0.3);
   }
 
-  /* 배터리 잔량 */
   #batteryFill {
     height: 100%;
     width: 0%;
@@ -74,7 +71,6 @@
     border-radius: 1px;
   }
 
-  /* 충전 중 번개 표시 */
   #batteryBolt {
     position: absolute;
     top: 0;
@@ -84,7 +80,7 @@
     display: none;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 9px; /* 번개 크기 축소 */
     font-weight: bold;
     color: #ffd700;
     text-shadow: 0 0 5px rgba(255, 215, 0, 0.8);
@@ -92,35 +88,35 @@
     border-radius: 2px;
   }
 
-  /* 배터리 뚜껑 */
   #batteryCap {
     position: absolute;
-    right: -5px;
-    top: 3px;
-    width: 3px;
-    height: 6px;
+    right: -4px; /* 위치 조정 */
+    top: 2.5px;
+    width: 2px; /* 3px → 2px */
+    height: 5px; /* 6px → 5px */
     background: rgba(255, 255, 255, 0.9);
     border-radius: 1px;
   }
 
-  /* 배터리 텍스트 */
   #batteryText {
-    min-width: 40px;
+    min-width: 35px; /* 40px → 35px */
     font-weight: 500;
+    font-size: 13px; /* 폰트 크기 통일 */
   }
 
-  /* 로고 컨테이너 */
+  /* 로고 컨테이너 - 간격 축소 */
   .logo-container {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 3px; /* 로고 간격 축소 (6px → 3px) */
     padding-left: 4px;
     border-left: 1px solid rgba(255, 255, 255, 0.2);
+    margin-left: 2px; /* 왼쪽 여백 최소화 */
   }
 
-  /* 로고 아이콘 */
+  /* 로고 아이콘 - 크기 약간 축소 */
   .icon {
-    height: 18px;
+    height: 16px; /* 18px → 16px */
     width: auto;
     opacity: 0.8;
     transition: all 0.2s ease;
@@ -153,10 +149,17 @@
     z-index: 10000;
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
+
+  /* 모든 요소의 기본 여백 제거 */
+  div, span {
+    margin: 0;
+    padding: 0;
+  }
 </style>
 </head>
 <body>
 
+<!-- 📌 간격 최소화된 오버레이 -->
 <div id="overlay">
 
   <!-- GPS 거리 -->
@@ -243,7 +246,6 @@ function updateBattery(level, charging) {
   const batteryFill = document.getElementById('batteryFill');
   const batteryBolt = document.getElementById('batteryBolt');
   
-  // 레벨 제한
   level = Math.min(100, Math.max(0, level));
   
   batteryText.innerText = level + '%';
@@ -267,16 +269,15 @@ function getBatteryColor(level) {
 }
 
 /* ======================
-   GPS 거리 계산 (속도 계산 제거)
+   GPS 거리 계산
 ====================== */
 let totalDistance = 0;
 let previousLocation = null;
 let lastUpdateTime = 0;
-const GPS_TIMEOUT = 300000; // 5분
+const GPS_TIMEOUT = 300000;
 
-// 거리 계산 함수 (Haversine)
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // 지구 반지름 (미터)
+  const R = 6371e3;
   const φ1 = lat1 * Math.PI / 180;
   const φ2 = lat2 * Math.PI / 180;
   const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -286,10 +287,9 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
             Math.cos(φ1) * Math.cos(φ2) *
             Math.sin(Δλ/2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c; // 미터
+  return R * c;
 }
 
-// 거리 표시 업데이트
 function updateDistanceDisplay() {
   const distanceEl = document.getElementById('distance');
   if (distanceEl) {
@@ -297,7 +297,6 @@ function updateDistanceDisplay() {
   }
 }
 
-// GPS 신호 체크
 setInterval(() => {
   if (lastUpdateTime > 0 && Date.now() - lastUpdateTime > GPS_TIMEOUT) {
     console.log('⚠️ GPS 신호 없음');
@@ -305,7 +304,6 @@ setInterval(() => {
   }
 }, 1000);
 
-// RealtimeIRL GPS 수신 (속도 계산 제거)
 try {
   RealtimeIRL.forPullKey("zeoeyze9htbyx455").addLocationListener((location) => {
     const now = Date.now();
@@ -320,7 +318,6 @@ try {
           location.longitude
         );
         
-        // 미터를 킬로미터로 변환하여 누적
         totalDistance += distance / 1000;
       }
       previousLocation = location;
@@ -334,13 +331,12 @@ try {
 }
 
 /* ======================
-   로컬 스토리지에 거리 저장
+   로컬 스토리지 저장
 ====================== */
 window.addEventListener('beforeunload', () => {
   localStorage.setItem('totalDistance', totalDistance.toString());
 });
 
-// 저장된 거리 불러오기
 const savedDistance = localStorage.getItem('totalDistance');
 if (savedDistance) {
   totalDistance = parseFloat(savedDistance);
@@ -390,7 +386,6 @@ async function updateWeather() {
   }
 }
 
-// 날씨 아이콘 매핑
 function getWeatherEmoji(iconCode) {
   const map = {
     '01d': '☀️', '01n': '🌙',
@@ -407,9 +402,9 @@ function getWeatherEmoji(iconCode) {
 }
 
 updateWeather();
-setInterval(updateWeather, 600000); // 10분마다
+setInterval(updateWeather, 600000);
 
-console.log('✅ 프랭크 오버레이 로드 완료');
+console.log('✅ 프랭크 오버레이 로드 완료 (간격 최소화)');
 </script>
 
 </body>
