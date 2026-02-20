@@ -50,51 +50,42 @@
   .battery-container {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 3px;
     position: relative;
   }
 
-  /* ===== 10칸 배터리 표시 ===== */
-  #batteryBars {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    height: 16px;
+  /* 배터리 아이콘 - 기존 스타일 */
+  #batteryIcon {
+    width: 24px;
+    height: 12px;
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    border-radius: 3px;
     position: relative;
+    background: rgba(0, 0, 0, 0.3);
   }
 
-  /* 배터리 칸 하나 */
-  .battery-bar {
-    width: 4px;
+  /* 배터리 잔량 - 10% 단위 색상 */
+  #batteryFill {
     height: 100%;
-    background: rgba(255, 255, 255, 0.2);
+    width: 0%;
+    transition: width 0.3s ease, background 0.3s ease;
     border-radius: 1px;
-    transition: all 0.3s ease;
   }
 
-  /* ===== 10% 단위 색상 클래스 ===== */
-  .battery-bar.active.level-100 { background: #00ff00; box-shadow: 0 0 8px #00ff00; } /* 100% - 형광초록 */
-  .battery-bar.active.level-90 { background: #33ff00; box-shadow: 0 0 8px #33ff00; } /* 90% - 연두 */
-  .battery-bar.active.level-80 { background: #66ff00; box-shadow: 0 0 8px #66ff00; } /* 80% - 밝은연두 */
-  .battery-bar.active.level-70 { background: #99ff00; box-shadow: 0 0 8px #99ff00; } /* 70% - 노란연두 */
-  .battery-bar.active.level-60 { background: #ccff00; box-shadow: 0 0 8px #ccff00; } /* 60% - 연두노랑 */
-  .battery-bar.active.level-50 { background: #ffff00; box-shadow: 0 0 8px #ffff00; } /* 50% - 노랑 */
-  .battery-bar.active.level-40 { background: #ffcc00; box-shadow: 0 0 8px #ffcc00; } /* 40% - 금색 */
-  .battery-bar.active.level-30 { background: #ff9900; box-shadow: 0 0 8px #ff9900; } /* 30% - 주황 */
-  .battery-bar.active.level-20 { background: #ff6600; box-shadow: 0 0 8px #ff6600; } /* 20% - 진한주황 */
-  .battery-bar.active.level-10 { background: #ff3300; box-shadow: 0 0 8px #ff3300; } /* 10% - 주홍 */
-  .battery-bar.active.level-0 { background: #ff0000; box-shadow: 0 0 8px #ff0000; } /* 0% - 빨강 */
+  /* 배터리 잔량 색상 클래스 */
+  #batteryFill.level-100 { background: #00ff00; box-shadow: 0 0 8px #00ff00; } /* 100% - 형광초록 */
+  #batteryFill.level-90 { background: #33ff00; box-shadow: 0 0 8px #33ff00; } /* 90% - 연두 */
+  #batteryFill.level-80 { background: #66ff00; box-shadow: 0 0 8px #66ff00; } /* 80% - 밝은연두 */
+  #batteryFill.level-70 { background: #99ff00; box-shadow: 0 0 8px #99ff00; } /* 70% - 노란연두 */
+  #batteryFill.level-60 { background: #ccff00; box-shadow: 0 0 8px #ccff00; } /* 60% - 연두노랑 */
+  #batteryFill.level-50 { background: #ffff00; box-shadow: 0 0 8px #ffff00; } /* 50% - 노랑 */
+  #batteryFill.level-40 { background: #ffcc00; box-shadow: 0 0 8px #ffcc00; } /* 40% - 금색 */
+  #batteryFill.level-30 { background: #ff9900; box-shadow: 0 0 8px #ff9900; } /* 30% - 주황 */
+  #batteryFill.level-20 { background: #ff6600; box-shadow: 0 0 8px #ff6600; } /* 20% - 진한주황 */
+  #batteryFill.level-10 { background: #ff3300; box-shadow: 0 0 8px #ff3300; } /* 10% - 주홍 */
+  #batteryFill.level-0 { background: #ff0000; box-shadow: 0 0 8px #ff0000; } /* 0% - 빨강 */
 
-  /* 배터리 뚜껑 */
-  #batteryCap {
-    width: 2px;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 1px;
-    margin-left: 1px;
-  }
-
-  /* 충전 중 번개 표시 */
+  /* 충전 중 번개 표시 - 정중앙 */
   #batteryBolt {
     position: absolute;
     top: 50%;
@@ -109,6 +100,17 @@
     line-height: 1;
     z-index: 10;
     animation: boltPulse 1s infinite;
+  }
+
+  /* 배터리 뚜껑 */
+  #batteryCap {
+    position: absolute;
+    right: -4px;
+    top: 2.5px;
+    width: 2px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 1px;
   }
 
   /* 배터리 텍스트 */
@@ -204,17 +206,12 @@
     🕐 --
   </div>
 
-  <!-- 배터리 - 10칸 표시 -->
+  <!-- 배터리 - 기존 스타일 + 10% 단위 색상 -->
   <div class="battery-container" data-tooltip="배터리 잔량">
-    <div style="display: flex; align-items: center; position: relative;">
-      <!-- 10칸 배터리 바 -->
-      <div id="batteryBars">
-        <!-- JavaScript로 10개 생성 -->
-      </div>
-      <!-- 배터리 뚜껑 -->
-      <div id="batteryCap"></div>
-      <!-- 충전 중 번개 -->
+    <div id="batteryIcon">
+      <div id="batteryFill"></div>
       <div id="batteryBolt">⚡</div>
+      <div id="batteryCap"></div>
     </div>
     <div id="batteryText">--%</div>
   </div>
@@ -258,25 +255,10 @@ try {
 }
 
 /* ======================
-   10칸 배터리 UI 생성
-====================== */
-const batteryBars = document.getElementById('batteryBars');
-
-// 10개의 배터리 칸 생성
-for (let i = 0; i < 10; i++) {
-  const bar = document.createElement('div');
-  bar.className = 'battery-bar';
-  batteryBars.appendChild(bar);
-}
-
-// 모든 배터리 칸 요소 가져오기
-const batteryBarElements = document.querySelectorAll('.battery-bar');
-
-/* ======================
    10% 단위 색상 반환 함수
 ====================== */
 function getBatteryLevelClass(level) {
-  // 레벨을 10단위로 반올림 (0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+  // 레벨을 10단위로 내림 (0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
   const roundedLevel = Math.floor(level / 10) * 10;
   
   switch(roundedLevel) {
@@ -299,6 +281,7 @@ function getBatteryLevelClass(level) {
 ====================== */
 function updateBattery(level, charging) {
   const batteryText = document.getElementById('batteryText');
+  const batteryFill = document.getElementById('batteryFill');
   const batteryBolt = document.getElementById('batteryBolt');
   
   level = Math.min(100, Math.max(0, level));
@@ -306,21 +289,12 @@ function updateBattery(level, charging) {
   // 배터리 텍스트 업데이트
   batteryText.innerText = level + '%';
   
-  // 10칸 기준 활성화할 칸 수 계산 (0-10)
-  const activeBars = Math.round(level / 10);
+  // 배터리 잔량 표시 (너비)
+  batteryFill.style.width = level + '%';
   
-  // 모든 칸 초기화
-  batteryBarElements.forEach(bar => {
-    bar.className = 'battery-bar';
-  });
-  
-  // 활성화된 칸에 10% 단위 색상 적용
-  for (let i = 0; i < activeBars; i++) {
-    // 각 칸의 실제 레벨 계산 (첫 번째 칸: 10%, 두 번째: 20%, ...)
-    const barLevel = (i + 1) * 10;
-    const levelClass = getBatteryLevelClass(barLevel);
-    batteryBarElements[i].classList.add('active', levelClass);
-  }
+  // 배터리 색상 클래스 적용 (10% 단위)
+  const levelClass = getBatteryLevelClass(level);
+  batteryFill.className = levelClass; // 기존 클래스 제거 후 새 클래스 적용
   
   // 충전 중일 때 번개 표시
   if (charging) {
@@ -491,7 +465,7 @@ function getWeatherEmoji(iconCode) {
 updateWeather();
 setInterval(updateWeather, 600000);
 
-console.log('✅ 프랭크 오버레이 로드 완료 (10% 단위 10가지 색상)');
+console.log('✅ 프랭크 오버레이 로드 완료 (기존 로고 + 10% 단위 색상)');
 </script>
 
 </body>
