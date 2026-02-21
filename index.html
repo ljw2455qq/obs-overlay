@@ -54,7 +54,7 @@
     position: relative;
   }
 
-  /* 배터리 아이콘 */
+  /* 배터리 아이콘 - 기존 스타일 */
   #batteryIcon {
     width: 24px;
     height: 12px;
@@ -62,10 +62,9 @@
     border-radius: 3px;
     position: relative;
     background: rgba(0, 0, 0, 0.3);
-    overflow: hidden;
   }
 
-  /* 배터리 잔량 - 실시간 그라데이션 */
+  /* 배터리 잔량 - 10% 단위 색상 */
   #batteryFill {
     height: 100%;
     width: 0%;
@@ -73,7 +72,20 @@
     border-radius: 1px;
   }
 
-  /* 충전 중 번개 표시 */
+  /* 배터리 잔량 색상 클래스 */
+  #batteryFill.level-100 { background: #00ff00; box-shadow: 0 0 8px #00ff00; } /* 100% - 형광초록 */
+  #batteryFill.level-90 { background: #33ff00; box-shadow: 0 0 8px #33ff00; } /* 90% - 연두 */
+  #batteryFill.level-80 { background: #66ff00; box-shadow: 0 0 8px #66ff00; } /* 80% - 밝은연두 */
+  #batteryFill.level-70 { background: #99ff00; box-shadow: 0 0 8px #99ff00; } /* 70% - 노란연두 */
+  #batteryFill.level-60 { background: #ccff00; box-shadow: 0 0 8px #ccff00; } /* 60% - 연두노랑 */
+  #batteryFill.level-50 { background: #ffff00; box-shadow: 0 0 8px #ffff00; } /* 50% - 노랑 */
+  #batteryFill.level-40 { background: #ffcc00; box-shadow: 0 0 8px #ffcc00; } /* 40% - 금색 */
+  #batteryFill.level-30 { background: #ff9900; box-shadow: 0 0 8px #ff9900; } /* 30% - 주황 */
+  #batteryFill.level-20 { background: #ff6600; box-shadow: 0 0 8px #ff6600; } /* 20% - 진한주황 */
+  #batteryFill.level-10 { background: #ff3300; box-shadow: 0 0 8px #ff3300; } /* 10% - 주홍 */
+  #batteryFill.level-0 { background: #ff0000; box-shadow: 0 0 8px #ff0000; } /* 0% - 빨강 */
+
+  /* 충전 중 번개 표시 - 정중앙 */
   #batteryBolt {
     position: absolute;
     top: 50%;
@@ -194,7 +206,7 @@
     🕐 --
   </div>
 
-  <!-- 배터리 - 실제값 + 실시간 그라데이션 색상 -->
+  <!-- 배터리 - 기존 스타일 + 10% 단위 색상 -->
   <div class="battery-container" data-tooltip="배터리 잔량">
     <div id="batteryIcon">
       <div id="batteryFill"></div>
@@ -243,39 +255,29 @@ try {
 }
 
 /* ======================
-   실시간 배터리 색상 반환 함수
-   배터리 레벨에 따라 1% 단위로 정확한 색상 반환
+   10% 단위 색상 반환 함수
 ====================== */
-function getBatteryColor(level) {
-  // 레벨에 따른 RGB 값 계산
-  // 100% → 초록 (0, 255, 0)
-  // 50% → 노랑 (255, 255, 0)
-  // 0% → 빨강 (255, 0, 0)
+function getBatteryLevelClass(level) {
+  // 레벨을 10단위로 내림 (0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+  const roundedLevel = Math.floor(level / 10) * 10;
   
-  let r, g, b;
-  
-  if (level >= 50) {
-    // 50% ~ 100%: 노랑(255,255,0) → 초록(0,255,0)
-    const factor = (level - 50) / 50; // 0 ~ 1
-    r = Math.round(255 * (1 - factor));
-    g = 255;
-    b = 0;
-  } else {
-    // 0% ~ 50%: 빨강(255,0,0) → 노랑(255,255,0)
-    const factor = level / 50; // 0 ~ 1
-    r = 255;
-    g = Math.round(255 * factor);
-    b = 0;
+  switch(roundedLevel) {
+    case 100: return 'level-100';
+    case 90: return 'level-90';
+    case 80: return 'level-80';
+    case 70: return 'level-70';
+    case 60: return 'level-60';
+    case 50: return 'level-50';
+    case 40: return 'level-40';
+    case 30: return 'level-30';
+    case 20: return 'level-20';
+    case 10: return 'level-10';
+    default: return 'level-0';
   }
-  
-  return `rgb(${r}, ${g}, ${b})`;
 }
 
 /* ======================
    배터리 업데이트 함수
-   - 텍스트: 실제 배터리 값 표시
-   - 막대 길이: 실제 배터리 값으로 설정
-   - 색상: 실시간 그라데이션으로 1% 단위 정확하게 매칭
 ====================== */
 function updateBattery(level, charging) {
   const batteryText = document.getElementById('batteryText');
@@ -284,16 +286,15 @@ function updateBattery(level, charging) {
   
   level = Math.min(100, Math.max(0, level));
   
-  // 텍스트는 실제 배터리 값 표시 (58% 그대로 표시)
+  // 배터리 텍스트 업데이트
   batteryText.innerText = level + '%';
   
-  // 막대 길이는 실제 배터리 값으로 설정 (58%만큼 채움)
+  // 배터리 잔량 표시 (너비)
   batteryFill.style.width = level + '%';
   
-  // 색상을 배터리 레벨에 따라 실시간으로 계산 (1% 단위로 정확하게 변함)
-  const color = getBatteryColor(level);
-  batteryFill.style.background = color;
-  batteryFill.style.boxShadow = `0 0 8px ${color}`;
+  // 배터리 색상 클래스 적용 (10% 단위)
+  const levelClass = getBatteryLevelClass(level);
+  batteryFill.className = levelClass; // 기존 클래스 제거 후 새 클래스 적용
   
   // 충전 중일 때 번개 표시
   if (charging) {
@@ -309,7 +310,6 @@ if (db) {
     if (!snapshot.exists()) return;
     const data = snapshot.val();
     if (data && typeof data.level === 'number') {
-      // 실제 배터리 값을 그대로 전달
       updateBattery(data.level, data.charging || false);
     }
   }, (error) => {
@@ -465,7 +465,7 @@ function getWeatherEmoji(iconCode) {
 updateWeather();
 setInterval(updateWeather, 600000);
 
-console.log('✅ 프랭크 오버레이 최종 완성본 (실시간 정확한 색상)');
+console.log('✅ 프랭크 오버레이 로드 완료 (기존 로고 + 10% 단위 색상)');
 </script>
 
 </body>
