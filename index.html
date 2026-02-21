@@ -371,12 +371,14 @@ if (db) {
 }
 
 /* ======================
-   GPS 거리 계산
+    GPS 거리 계산
 ====================== */
 let totalDistance = 0;
 let previousLocation = null;
 let lastUpdateTime = 0;
-const GPS_TIMEOUT = 300000;
+
+// 6시간 = 6(시간) * 60(분) * 60(초) * 1000(밀리초)
+const GPS_TIMEOUT = 21600000;
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
