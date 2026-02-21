@@ -237,7 +237,7 @@
     🕐 --
   </div>
 
-  <!-- 배터리 - 기존 스타일 + 5% 단위 색상 -->
+  <!-- 배터리 - 실제값 표시 + 5% 단위 색상 -->
   <div class="battery-container" data-tooltip="배터리 잔량">
     <div id="batteryIcon">
       <div id="batteryFill"></div>
@@ -287,12 +287,13 @@ try {
 
 /* ======================
    5% 단위 색상 반환 함수 (20단계)
+   실제 배터리 값은 유지하고 색상만 5% 단위로 매핑
 ====================== */
 function getBatteryLevelClass(level) {
-  // 레벨을 5단위로 내림 (0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100)
-  const roundedLevel = Math.floor(level / 5) * 5;
+  // 색상만 5% 단위로 반올림하여 매핑
+  const colorLevel = Math.round(level / 5) * 5;
   
-  switch(roundedLevel) {
+  switch(colorLevel) {
     case 100: return 'level-100';
     case 95: return 'level-95';
     case 90: return 'level-90';
@@ -319,6 +320,9 @@ function getBatteryLevelClass(level) {
 
 /* ======================
    배터리 업데이트 함수
+   - 텍스트: 실제 배터리 값 표시
+   - 막대 길이: 실제 배터리 값으로 설정
+   - 색상: 5% 단위로 반올림하여 적용
 ====================== */
 function updateBattery(level, charging) {
   const batteryText = document.getElementById('batteryText');
@@ -327,15 +331,15 @@ function updateBattery(level, charging) {
   
   level = Math.min(100, Math.max(0, level));
   
-  // 배터리 텍스트 업데이트
+  // [중요] 텍스트는 실제 배터리 값 표시 (58% 그대로 표시)
   batteryText.innerText = level + '%';
   
-  // 배터리 잔량 표시 (너비)
+  // [중요] 막대 길이는 실제 배터리 값으로 설정 (58%만큼 채움)
   batteryFill.style.width = level + '%';
   
-  // 배터리 색상 클래스 적용 (5% 단위)
+  // [중요] 색상만 5% 단위로 반올림하여 적용 (58% → 60% 색상)
   const levelClass = getBatteryLevelClass(level);
-  batteryFill.className = levelClass; // 기존 클래스 제거 후 새 클래스 적용
+  batteryFill.className = levelClass;
   
   // 충전 중일 때 번개 표시
   if (charging) {
@@ -351,6 +355,7 @@ if (db) {
     if (!snapshot.exists()) return;
     const data = snapshot.val();
     if (data && typeof data.level === 'number') {
+      // 실제 배터리 값을 그대로 전달
       updateBattery(data.level, data.charging || false);
     }
   }, (error) => {
@@ -371,14 +376,12 @@ if (db) {
 }
 
 /* ======================
-    GPS 거리 계산
+   GPS 거리 계산
 ====================== */
 let totalDistance = 0;
 let previousLocation = null;
 let lastUpdateTime = 0;
-
-// 6시간 = 6(시간) * 60(분) * 60(초) * 1000(밀리초)
-const GPS_TIMEOUT = 21600000;
+const GPS_TIMEOUT = 300000;
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
@@ -508,7 +511,7 @@ function getWeatherEmoji(iconCode) {
 updateWeather();
 setInterval(updateWeather, 600000);
 
-console.log('✅ 프랭크 오버레이 로드 완료 (5% 단위 20가지 색상)');
+console.log('✅ 프랭크 오버레이 로드 완료 (텍스트:실제값, 색상:5%단위)');
 </script>
 
 </body>
