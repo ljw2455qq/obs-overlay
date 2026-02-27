@@ -335,6 +335,8 @@ if (db) {
 let totalDistance = 0;
 let previousLocation = null;
 let lastUpdateTime = 0;
+let gpsTimeoutId = null;
+let isGpsActive = false;
 
 // 6시간 = 6(시간) * 60(분) * 60(초) * 1000(밀리초)
 const GPS_TIMEOUT = 21600000;
@@ -360,17 +362,72 @@ function updateDistanceDisplay() {
   }
 }
 
+// GPS 타임아웃 체크 함수
+function checkGpsTimeout() {
+  if (lastUpdateTime > 0) {
+    const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+    
+    if (timeSinceLastUpdate > GPS_TIMEOUT) {
+      console.log('⚠️ 6시간 이상 GPS 신호 없음 - 거리 초기화');
+      
+      // 거리 초기화
+      totalDistance = 0;
+      previousLocation = null;
+      isGpsActive = false;
+      
+      // 로컬 스토리지 초기화
+      localStorage.removeItem('totalDistance');
+      
+      // 디스플레이 업데이트
+      const distanceEl = document.getElementById('distance');
+      distanceEl.innerHTML = '0.00 km';
+      distanceEl.style.color = '#7df9ff'; // 원래 색상으로 복원
+      
+      // 타임아웃 체크 중지 (새로운 GPS 신호가 오면 다시 시작됨)
+      if (gpsTimeoutId) {
+        clearInterval(gpsTimeoutId);
+        gpsTimeoutId = null;
+      }
+    } else {
+      // 아직 타임아웃 안됨 - 신호없음 표시
+      document.getElementById('distance').innerHTML = '⏸️ 신호없음';
+    }
+  }
+}
+
+// 1초마다 타임아웃 체크
 setInterval(() => {
-  if (lastUpdateTime > 0 && Date.now() - lastUpdateTime > GPS_TIMEOUT) {
-    console.log('⚠️ GPS 신호 없음');
-    document.getElementById('distance').innerHTML = '⏸️ 신호없음';
+  if (lastUpdateTime > 0) {
+    const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+    
+    if (timeSinceLastUpdate > GPS_TIMEOUT) {
+      // 6시간 초과 - 초기화
+      console.log('⚠️ 6시간 이상 GPS 신호 없음 - 거리 초기화');
+      totalDistance = 0;
+      previousLocation = null;
+      isGpsActive = false;
+      localStorage.removeItem('totalDistance');
+      updateDistanceDisplay();
+      
+      // 마지막 업데이트 시간 리셋 (계속 체크하지 않도록)
+      lastUpdateTime = 0;
+    } else if (timeSinceLastUpdate > 10000) { // 10초 이상 신호 없으면 임시 표시
+      document.getElementById('distance').innerHTML = '⏸️ 신호없음';
+    }
   }
 }, 1000);
 
 try {
   RealtimeIRL.forPullKey("zeoeyze9htbyx455").addLocationListener((location) => {
     const now = Date.now();
+    
+    // 이전에 타임아웃 상태였다면 초기화 후 새로 시작
+    if (!isGpsActive && previousLocation === null && totalDistance === 0) {
+      console.log('🔄 GPS 신호 재연결 - 새로운 세션 시작');
+    }
+    
     lastUpdateTime = now;
+    isGpsActive = true;
     
     if (location.latitude && location.longitude) {
       if (previousLocation) {
@@ -385,6 +442,9 @@ try {
       }
       previousLocation = location;
       updateDistanceDisplay();
+      
+      // 거리가 업데이트될 때마다 로컬 스토리지 저장
+      localStorage.setItem('totalDistance', totalDistance.toString());
     }
   });
   console.log('📍 GPS 연결 시작');
@@ -397,14 +457,44 @@ try {
    로컬 스토리지 저장
 ====================== */
 window.addEventListener('beforeunload', () => {
-  localStorage.setItem('totalDistance', totalDistance.toString());
+  // GPS가 활성 상태일 때만 저장
+  if (isGpsActive) {
+    localStorage.setItem('totalDistance', totalDistance.toString());
+  }
 });
 
+// 저장된 거리 불러오기 (단, 마지막 업데이트 시간도 함께 체크)
 const savedDistance = localStorage.getItem('totalDistance');
+const savedLastUpdate = localStorage.getItem('lastGpsUpdate');
+
 if (savedDistance) {
-  totalDistance = parseFloat(savedDistance);
-  updateDistanceDisplay();
+  // 저장된 마지막 업데이트 시간 확인
+  if (savedLastUpdate) {
+    const timeSinceLastSave = Date.now() - parseInt(savedLastUpdate);
+    
+    // 6시간 이내에 저장된 데이터만 불러오기
+    if (timeSinceLastSave <= GPS_TIMEOUT) {
+      totalDistance = parseFloat(savedDistance);
+      updateDistanceDisplay();
+      console.log('📦 저장된 거리 불러옴:', totalDistance.toFixed(2), 'km');
+    } else {
+      console.log('🔄 마지막 GPS 신호 후 6시간 경과 - 거리 초기화');
+      localStorage.removeItem('totalDistance');
+      localStorage.removeItem('lastGpsUpdate');
+    }
+  } else {
+    // 이전 버전 호환: 저장된 거리는 불러오되, 타임스탬프가 없으면 기본값으로 유지
+    totalDistance = parseFloat(savedDistance);
+    updateDistanceDisplay();
+  }
 }
+
+// GPS 업데이트 시 마지막 시간 저장
+setInterval(() => {
+  if (lastUpdateTime > 0) {
+    localStorage.setItem('lastGpsUpdate', lastUpdateTime.toString());
+  }
+}, 60000); // 1분마다 저장
 
 /* ======================
    시간 업데이트
@@ -425,7 +515,7 @@ setInterval(updateTime, 1000);
 /* ======================
    날씨 업데이트
 ====================== */
-const WEATHER_API = "3a4a39b054762e36581605681026ed35";
+const WEATHER_API = "3a4a39b054762e365026ed35";
 const CITY = "Sejong";
 
 async function updateWeather() {
@@ -467,7 +557,7 @@ function getWeatherEmoji(iconCode) {
 updateWeather();
 setInterval(updateWeather, 600000);
 
-console.log('✅ 프랭크 오버레이 로드 완료 (기존 로고 + 10% 단위 색상)');
+console.log('✅ 프랭크 오버레이 로드 완료 (GPS 6시간 초과 시 자동 초기화)');
 </script>
 
 </body>
