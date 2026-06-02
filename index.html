@@ -6,11 +6,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
 <style>
+  /* 수익 오버레이와 동일한 폰트 */
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
   body {
     margin: 0;
     background: transparent;
     color: white;
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-family: 'Noto Sans KR', -apple-system, 'Segoe UI', sans-serif;
   }
 
   /* 전체 오버레이 */
@@ -27,14 +30,14 @@
     border-radius: 30px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-    font-size: 14px;
+    font-size: 15px;
     z-index: 9999;
   }
 
   /* GPS 거리 */
   #distance {
     color: #7df9ff;
-    font-weight: 700;
+    font-weight: 400;
     text-shadow: 0 0 8px rgba(125, 249, 255, 0.5);
     margin-right: 2px;
   }
@@ -116,7 +119,7 @@
   /* 배터리 텍스트 */
   #batteryText {
     min-width: 35px;
-    font-weight: 500;
+    font-weight: 400;
     font-size: 13px;
   }
 
