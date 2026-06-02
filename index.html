@@ -20,7 +20,7 @@
   #overlayInner {
     display: inline-flex;
     align-items: center;
-    gap: 14px;
+    gap: 20px;
     white-space: nowrap;
     line-height: 1;
     transform-origin: left center;
@@ -35,14 +35,14 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 20px;
     background: rgba(0, 0, 0, 0.72);
     backdrop-filter: blur(8px);
-    padding: 0 16px;
+    padding: 0 22px;
     border-radius: 0;
     border: none;
     box-shadow: none;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 400;
     line-height: 1;
     white-space: nowrap;
@@ -53,8 +53,8 @@
   .seg {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 20px;
+    gap: 9px;
+    font-size: 22px;
     font-weight: 400;
     color: #ffffff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.75);
@@ -274,7 +274,7 @@ if (db) {
     document.getElementById('dailyText').innerText   = formatWon(data.daily);
     document.getElementById('weeklyText').innerText  = formatWon(data.weekly);
     document.getElementById('monthlyText').innerText = formatWon(data.monthly);
-  }, (error) => console.error('❌ 수익 데이터 로드 실패:', error));
+  }, (error) => console.error('��� 수익 데이터 로드 실패:', error));
 
   /* ===== 날짜 롤오버: 하루 지나면 어제 일수익을 월/연 누적에 자동 합산 ===== */
   function toNumInc(v){ if(v===null||v===undefined) return 0; const n=parseInt(String(v).replace(/[^0-9-]/g,''),10); return isNaN(n)?0:n; }
