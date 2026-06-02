@@ -423,8 +423,9 @@ if (savedDistance && savedLastUpdate) {
 setInterval(() => {
   if (lastUpdateTime === 0) return;
   const elapsed = Date.now() - lastUpdateTime;
+  // 신호가 끊겨도 이동거리는 마지막 값을 그대로 유지 (끊김 표시는 신호 막대로만)
+  // 단, 6시간 이상 무신호면 새 주행으로 보고 거리 초기화
   if (elapsed > GPS_TIMEOUT_MS) resetGpsState();
-  else if (elapsed > GPS_NO_SIGNAL_MS) setDistanceDisplay('⏸️ 신호없음', '#aaaaaa');
 }, 1000);
 setInterval(() => { if (lastUpdateTime > 0) saveGpsState(); }, 60000);
 window.addEventListener('beforeunload', () => { if (lastUpdateTime > 0) saveGpsState(); });
