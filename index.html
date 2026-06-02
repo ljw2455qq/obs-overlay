@@ -76,6 +76,15 @@
     display: block;
   }
 
+  #channelLogo {
+    height: 36px;
+    width: auto;
+    margin: -8px 6px -8px 0;
+    object-fit: contain;
+    display: block;
+    flex: 0 0 auto;
+  }
+
   /* ===== 배터리 ===== */
   .battery-container {
     display: flex;
@@ -190,10 +199,7 @@
 
   <!-- 플랫폼 로고 (균일 크기) -->
   <div class="logo-container">
-    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%88%B2%EB%A1%9C%EA%B3%A0.png" alt="숲" title="SOOP">
-    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%B9%98%EC%A7%80%EC%A7%81%EB%A1%9C%EA%B3%A0.png" alt="치지직" title="치지직">
-    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%ED%8A%B8%EC%9C%84%EC%B9%98%EB%A1%9C%EA%B3%A0.png" alt="Twitch" title="Twitch">
-    <img class="icon" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/%EC%9C%A0%ED%8A%9C%EB%B8%8C%EB%A1%9C%EA%B3%A0.png" alt="YouTube" title="YouTube">
+    <img id="channelLogo" src="https://raw.githubusercontent.com/ljw2455qq/obs-overlay/main/LOGO.png" alt="LOGO">
   </div>
 
   <span class="divider"></span>
