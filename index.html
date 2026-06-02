@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<title>통합 오버레이</title>
+<title>프랭크 통합 오버레이</title>
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
 <style>
@@ -17,7 +17,16 @@
   }
 
   /* ===== 통합 바 ===== */
+  #overlayInner {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    white-space: nowrap;
+    line-height: 1;
+    transform-origin: left center;
+  }
   #overlay {
+    overflow: hidden;
     position: fixed;
     top: 0;
     left: 0;
@@ -184,6 +193,7 @@
 <body>
 
 <div id="overlay">
+<div id="overlayInner">
 
   <!-- 이동 거리 -->
   <span class="seg" id="distance" data-tooltip="오늘 이동 거리">
@@ -222,6 +232,7 @@
     <span id="batteryText">--%</span>
   </div>
 
+</div>
 </div>
 
 <script type="module">
@@ -298,6 +309,23 @@ if (db) {
   incomeRollover();
   setInterval(incomeRollover, 60000);
 }
+
+/* ===== 폭 자동 맞춤 (auto-fit): 숫자가 커져도 한 줄에 다 들어가도록 축소 ===== */
+function autoFitOverlay(){
+  const ov = document.getElementById('overlay');
+  const inner = document.getElementById('overlayInner');
+  if(!ov || !inner) return;
+  inner.style.transform = 'scale(1)';
+  const st = getComputedStyle(ov);
+  const avail = ov.clientWidth - (parseFloat(st.paddingLeft)||0) - (parseFloat(st.paddingRight)||0);
+  const need = inner.scrollWidth;
+  if(need > avail && need > 0){
+    inner.style.transform = 'scale(' + (avail/need) + ')';
+  }
+}
+window.addEventListener('load', autoFitOverlay);
+window.addEventListener('resize', autoFitOverlay);
+setInterval(autoFitOverlay, 500);
 
 /* ===== 배터리 (battery) ===== */
 function getBatteryLevelClass(level) {
