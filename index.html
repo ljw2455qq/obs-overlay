@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<title>컴아저씨 통합 오버레이</title>
+<title>프랭크 통합 오버레이</title>
 <script src="https://cdn.jsdelivr.net/npm/@rtirl/api"></script>
 
 <style>
@@ -217,7 +217,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 /* ===== Firebase ===== */
 const firebaseConfig = {
@@ -385,6 +385,29 @@ async function updateWeather() {
 }
 updateWeather();
 setInterval(updateWeather, 600000);
+
+/* ===== 배터리 전송 (이 기기 배터리를 보낼 때만: URL 끌에 ?send=1) =====
+   → 휴대폰 브라우저에서 이 페이지를  ...frank-merged-overlay.html?send=1  로 열면
+     휴대폰 배터리가 Firebase로 전송됩니다. OBS PC에서는 ?send 없이 열어 표시만 합니다. */
+const SEND_BATTERY = new URLSearchParams(location.search).has('send');
+if (SEND_BATTERY && db && navigator.getBattery) {
+  navigator.getBattery().then((battery) => {
+    function sendBattery() {
+      set(ref(db, 'battery'), {
+        level: Math.floor(battery.level * 100),
+        charging: battery.charging,
+        timestamp: Date.now()
+      });
+      console.log('🔋 Battery send:', Math.floor(battery.level * 100));
+    }
+    sendBattery();
+    setInterval(sendBattery, 10000);
+    battery.addEventListener('levelchange', sendBattery);
+    battery.addEventListener('chargingchange', sendBattery);
+  }).catch((e) => console.error('❌ 배터리 전송 실패:', e));
+} else if (SEND_BATTERY) {
+  console.warn('⚠️ 이 브라우저는 navigator.getBattery 미지원 — 전송 불가');
+}
 
 console.log('✅ 프랭크 통합 오버레이 로드 완료');
 </script>
