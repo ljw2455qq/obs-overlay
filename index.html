@@ -238,7 +238,7 @@
   <span class="seg" id="weather" data-tooltip="현재 날씨" style="margin-left:-12px">🌡️ --°C</span>
 
   <!-- 시간 -->
-  <span class="seg" id="time" data-tooltip="현재 시간">🕐 --</span>
+  <span class="seg" id="time" data-tooltip="현재 시간">--</span>
 
   <!-- 신호 강도 (RealtimeIRL) -->
   <div class="signal-container" id="signal" data-tooltip="송출 신호 (RealtimeIRL)">
@@ -477,7 +477,7 @@ setInterval(updateSignal, 1000);
 
 /* ===== 시간 ===== */
 function updateTime() {
-  document.getElementById('time').innerHTML = '🕐 ' + new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12:true });
+  document.getElementById('time').innerHTML = new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12:true });
 }
 updateTime();
 setInterval(updateTime, 1000);
