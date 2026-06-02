@@ -96,6 +96,26 @@
     flex: 0 0 auto;
   }
 
+  /* ===== 신호 강도 (RealtimeIRL) ===== */
+  .signal-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 26px;
+    padding: 0 2px;
+    flex: 0 0 auto;
+  }
+  .signal-container .sig-bar {
+    width: 5px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.25);
+    transition: background 0.4s ease;
+  }
+  .signal-container .sig-bar:nth-child(1) { height: 30%; }
+  .signal-container .sig-bar:nth-child(2) { height: 52%; }
+  .signal-container .sig-bar:nth-child(3) { height: 74%; }
+  .signal-container .sig-bar:nth-child(4) { height: 100%; }
+
   /* ===== 배터리 ===== */
   .battery-container {
     display: flex;
@@ -219,6 +239,14 @@
 
   <!-- 시간 -->
   <span class="seg" id="time" data-tooltip="현재 시간">🕐 --</span>
+
+  <!-- 신호 강도 (RealtimeIRL) -->
+  <div class="signal-container" id="signal" data-tooltip="송출 신호 (RealtimeIRL)">
+    <div class="sig-bar"></div>
+    <div class="sig-bar"></div>
+    <div class="sig-bar"></div>
+    <div class="sig-bar"></div>
+  </div>
 
   <!-- 배터리 -->
   <div class="battery-container" data-tooltip="배터리 잔량">
@@ -425,6 +453,26 @@ try {
   console.error('❌ GPS 오류:', error);
   setDistanceDisplay('GPS 오류', '#ff4444');
 }
+
+/* ===== 신호 강도 (RealtimeIRL 연결 상태) ===== */
+/* RealtimeIRL에서 GPS/네트워크 데이터가 들어오는 신선도(lastUpdateTime)를 기준으로
+   송출 연결 상태를 신호 막대로 표시합니다. 데이터가 자주 들어올수록 강한 신호. */
+const signalBars = document.querySelectorAll('#signal .sig-bar');
+function setSignalLevel(level, color) {
+  signalBars.forEach((bar, i) => {
+    bar.style.background = (i < level) ? color : 'rgba(255,255,255,0.25)';
+  });
+}
+function updateSignal() {
+  if (lastUpdateTime === 0) { setSignalLevel(1, '#ff3b30'); return; }
+  const elapsed = Date.now() - lastUpdateTime;
+  if (elapsed < 5000)       setSignalLevel(4, '#00e676'); // 강함 (초록)
+  else if (elapsed < 10000) setSignalLevel(3, '#a8e000'); // 양호 (연두)
+  else if (elapsed < 20000) setSignalLevel(2, '#ff9500'); // 불안정 (주황)
+  else                      setSignalLevel(1, '#ff3b30'); // 끊김 위험 (빨강)
+}
+updateSignal();
+setInterval(updateSignal, 1000);
 
 /* ===== 시간 ===== */
 function updateTime() {
