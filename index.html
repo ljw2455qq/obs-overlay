@@ -24,6 +24,7 @@
     white-space: nowrap;
     line-height: 1;
     transform-origin: left center;
+    flex: 0 0 auto;
   }
   #overlay {
     overflow: hidden;
@@ -62,6 +63,17 @@
 
   .seg .label { opacity: 0.85; }
   .seg .val { font-weight: 500; }
+
+  /* ===== 수익 강조 ===== */
+  .income-val { color: #ffd54a; font-weight: 600; display: inline-block; transform-origin: center; }
+  .income-goal { font-size: 15px; font-weight: 500; opacity: 0.85; margin-left: 3px; color: #9fd0ff; }
+  .income-goal.done { color: #00e676; }
+  @keyframes incomeFlash {
+    0%   { transform: scale(1);    filter: brightness(1);   }
+    30%  { transform: scale(1.22); filter: brightness(1.9); color: #fff59d; }
+    100% { transform: scale(1);    filter: brightness(1);   }
+  }
+  .income-val.flash { animation: incomeFlash 0.85s ease; }
 
   /* 구분선 */
   .divider {
@@ -223,9 +235,9 @@
   <span class="divider"></span>
 
   <!-- 수익 (Firebase overlayData) -->
-  <span class="seg" data-tooltip="오늘 수익"><span class="label">일수익:</span> <span class="val" id="dailyText">0원</span></span>
-  <span class="seg" data-tooltip="이번 달 수익"><span class="label">월수익:</span> <span class="val" id="weeklyText">0원</span></span>
-  <span class="seg" data-tooltip="올해 수익"><span class="label">연수익:</span> <span class="val" id="monthlyText">0원</span></span>
+  <span class="seg" data-tooltip="오늘 수익">💰 <span class="label">일수익:</span> <span class="val income-val" id="dailyText">0원</span><span class="income-goal" id="dailyGoalText"></span></span>
+  <span class="seg" data-tooltip="이번 달 수익"><span class="label">월수익:</span> <span class="val income-val" id="weeklyText">0원</span><span class="income-goal" id="weeklyGoalText"></span></span>
+  <span class="seg" data-tooltip="올해 수익"><span class="label">연수익:</span> <span class="val income-val" id="monthlyText">0원</span><span class="income-goal" id="monthlyGoalText"></span></span>
 
   <span class="divider"></span>
 
@@ -293,13 +305,33 @@ function formatWon(value) {
   return num.toLocaleString() + '원';
 }
 
+let _prevDaily = null, _prevWeekly = null, _prevMonthly = null;
+function _incNum(v){ const n = parseInt(String(v == null ? 0 : v).replace(/[^0-9-]/g, ''), 10); return isNaN(n) ? 0 : n; }
+function _flashIncome(id){ const el = document.getElementById(id); if(!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+function _renderGoal(goalId, current, goal){
+  const g = document.getElementById(goalId); if(!g) return;
+  const goalN = _incNum(goal);
+  if(goalN <= 0){ g.innerText = ''; g.classList.remove('done'); return; }
+  const pct = Math.round(current / goalN * 100);
+  g.innerText = '(' + pct + '%)';
+  g.classList.toggle('done', pct >= 100);
+}
+
 if (db) {
   onValue(ref(db, 'overlayData'), (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
+    const _d = _incNum(data.daily), _w = _incNum(data.weekly), _m = _incNum(data.monthly);
     document.getElementById('dailyText').innerText   = formatWon(data.daily);
     document.getElementById('weeklyText').innerText  = formatWon(data.weekly);
     document.getElementById('monthlyText').innerText = formatWon(data.monthly);
+    _renderGoal('dailyGoalText', _d, data.dailyGoal);
+    _renderGoal('weeklyGoalText', _w, data.monthGoal);
+    _renderGoal('monthlyGoalText', _m, data.yearGoal);
+    if(_prevDaily   !== null && _d > _prevDaily)   _flashIncome('dailyText');
+    if(_prevWeekly  !== null && _w > _prevWeekly)  _flashIncome('weeklyText');
+    if(_prevMonthly !== null && _m > _prevMonthly) _flashIncome('monthlyText');
+    _prevDaily = _d; _prevWeekly = _w; _prevMonthly = _m;
   }, (error) => console.error('����� 수익 데이터 로드 실패:', error));
 
   /* ===== 날짜 롤오버: 하루 지나면 어제 일수익을 월/연 누적에 자동 합산 ===== */
@@ -344,7 +376,8 @@ function autoFitOverlay(){
   inner.style.transform = 'scale(1)';
   const st = getComputedStyle(ov);
   const avail = ov.clientWidth - (parseFloat(st.paddingLeft)||0) - (parseFloat(st.paddingRight)||0);
-  const need = inner.scrollWidth;
+  // flex:0 0 auto 덕분에 압축되지 않아 실제 너비를 정확히 측정함
+  const need = Math.max(inner.scrollWidth, inner.offsetWidth);
   if(need > avail && need > 0){
     inner.style.transform = 'scale(' + (avail/need) + ')';
   }
@@ -457,7 +490,7 @@ try {
 
 /* ===== 신호 강도 (RealtimeIRL 연결 상태) ===== */
 /* RealtimeIRL에서 GPS/네트워크 데이터가 들어오는 신선도(lastUpdateTime)를 기준으로
-   송출 연결 상태를 신호 막대로 표시합니다. 데이터가 자주 들어올수록 강한 신호. */
+   송출 연결 상태를 신호 막대로 표시합니다. 데이터가 자�� 들어올수록 강한 신호. */
 const signalBars = document.querySelectorAll('#signal .sig-bar');
 function setSignalLevel(level, color) {
   signalBars.forEach((bar, i) => {
