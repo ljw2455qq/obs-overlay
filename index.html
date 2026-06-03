@@ -25,6 +25,8 @@
     line-height: 1;
     transform-origin: left center;
     flex: 0 0 auto;
+    transition: transform 0.25s ease;
+    will-change: transform;
   }
   #overlay {
     overflow: hidden;
@@ -328,6 +330,7 @@ if (db) {
     _renderGoal('dailyGoalText', _d, data.dailyGoal);
     _renderGoal('weeklyGoalText', _w, data.monthGoal);
     _renderGoal('monthlyGoalText', _m, data.yearGoal);
+    scheduleAutoFit();
     if(_prevDaily   !== null && _d > _prevDaily)   _flashIncome('dailyText');
     if(_prevWeekly  !== null && _w > _prevWeekly)  _flashIncome('weeklyText');
     if(_prevMonthly !== null && _m > _prevMonthly) _flashIncome('monthlyText');
@@ -369,22 +372,27 @@ if (db) {
 }
 
 /* ===== 폭 자동 맞춤 (auto-fit): 숫자가 커져도 한 줄에 다 들어가도록 축소 ===== */
+let _fitScale = 1;
 function autoFitOverlay(){
   const ov = document.getElementById('overlay');
   const inner = document.getElementById('overlayInner');
   if(!ov || !inner) return;
-  inner.style.transform = 'scale(1)';
   const st = getComputedStyle(ov);
   const avail = ov.clientWidth - (parseFloat(st.paddingLeft)||0) - (parseFloat(st.paddingRight)||0);
-  // flex:0 0 auto 덕분에 압축되지 않아 실제 너비를 정확히 측정함
-  const need = Math.max(inner.scrollWidth, inner.offsetWidth);
-  if(need > avail && need > 0){
-    inner.style.transform = 'scale(' + (avail/need) + ')';
+  // 현재 적용된 스케일을 역산해 자연 너비를 구함 (reset 없이 측정 → 깜빡임 방지)
+  const natural = inner.getBoundingClientRect().width / (_fitScale || 1);
+  if(natural <= 0 || avail <= 0) return;
+  // 넓으면 1배(원래 크기), 좌우로 넘치면 들어갈 만큼만 축소
+  let scale = natural > avail ? (avail / natural) : 1;
+  if(Math.abs(scale - _fitScale) > 0.002){
+    _fitScale = scale;
+    inner.style.transform = 'scale(' + scale + ')';
   }
 }
+function scheduleAutoFit(){ requestAnimationFrame(autoFitOverlay); }
 window.addEventListener('load', autoFitOverlay);
 window.addEventListener('resize', autoFitOverlay);
-setInterval(autoFitOverlay, 500);
+setInterval(autoFitOverlay, 300);
 
 /* ===== 배터리 (battery) ===== */
 function getBatteryLevelClass(level) {
@@ -429,6 +437,7 @@ const distanceValEl = document.querySelector('#distance .val');
 
 function setDistanceDisplay(text, color = '#ffffff') {
   distanceValEl.innerText = text;
+  scheduleAutoFit();
   distanceValEl.style.color = color;
 }
 function updateDistanceDisplay() { setDistanceDisplay(totalDistance.toFixed(2) + ' km'); }
