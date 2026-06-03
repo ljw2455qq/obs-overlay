@@ -70,6 +70,11 @@
   .income-val { color: #ffffff; font-weight: 600; display: inline-block; transform-origin: center; }
   .income-goal { font-size: 15px; font-weight: 500; opacity: 0.85; margin-left: 3px; color: #9fd0ff; }
   .income-goal.done { color: #00e676; }
+  /* 값 길이가 변해도 칸 너비를 고정해 위치가 흔들리지 않게 함 */
+  #distance .val { display: inline-block; min-width: 94px; }
+  #dailyText   { min-width: 104px; }
+  #weeklyText  { min-width: 128px; }
+  #monthlyText { min-width: 152px; }
   @keyframes incomeFlash {
     0%   { transform: scale(1);    filter: brightness(1);   }
     30%  { transform: scale(1.22); filter: brightness(1.9); color: #fff59d; }
