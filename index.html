@@ -28,12 +28,15 @@
     transition: transform 0.25s ease;
     will-change: transform;
   }
+  /* 위플랫 시청자수 영역과 겹치지 않도록 왼쪽 430px은 비워둠 */
+  :root { --weflat-safe-left: 430px; }
+
   #overlay {
     overflow: hidden;
     position: fixed;
     top: 0;
-    left: 0;
-    width: 100%;
+    left: var(--weflat-safe-left);
+    width: calc(100% - var(--weflat-safe-left));
     height: 100vh;
     box-sizing: border-box;
     display: flex;
@@ -397,7 +400,7 @@ if (db) {
     if(_prevWeekly  !== null && _w > _prevWeekly)  _flashIncome('weeklyText');
     if(_prevMonthly !== null && _m > _prevMonthly) _flashIncome('monthlyText');
     _prevDaily = _d; _prevWeekly = _w; _prevMonthly = _m;
-  }, (error) => console.error('����� 수익 데이터 로드 실패:', error));
+  }, (error) => console.error('      수익 데이터 로드 실패:', error));
 
   /* ===== 날짜 롤오버: 하루 지나면 어제 일수익을 월/연 누적에 자동 합산 ===== */
   function toNumInc(v){ if(v===null||v===undefined) return 0; const n=parseInt(String(v).replace(/[^0-9-]/g,''),10); return isNaN(n)?0:n; }
@@ -573,7 +576,7 @@ try {
 
 /* ===== 신호 강도 (RealtimeIRL 연결 상태) ===== */
 /* RealtimeIRL에서 GPS/네트워크 데이터가 들어오는 신선도(lastUpdateTime)를 기준으로
-   송출 연결 상태를 신호 막대로 표시합니다. 데이터가 자�� 들어올수록 강한 신호. */
+   송출 연결 상태를 신호 막대로 표시합니다. 데이터가 자   들어올수록 강한 신호. */
 const signalBars = document.querySelectorAll('#signal .sig-bar');
 function setSignalLevel(level, color) {
   signalBars.forEach((bar, i) => {
