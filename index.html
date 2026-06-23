@@ -567,28 +567,56 @@ async function updateWeather() {
 updateWeather();
 setInterval(updateWeather, 600000);
 
-/* ===== 배터리 전송 (이 기기 배터리를 보낼 때만: URL 끌에 ?send=1) =====
-   → 휴대폰 브라우저에서 이 페이지를  ...frank-merged-overlay.html?send=1  로 열면
-     휴대폰 배터리가 Firebase로 전송됩니다. OBS PC에서는 ?send 없이 열어 표시만 합니다. */
+/* ===== 배터리 직접 표시 + 전송 (서브폰: URL 끝에 ?send=1) =====
+   → 서브폰 Kiwi Browser에서 .../index.html?send=1 로 열면
+     1) 서브폰 화면에도 배터리를 바로 표시하고
+     2) Firebase로 전송해서 OBS 오버레이에도 표시합니다. */
 const SEND_BATTERY = new URLSearchParams(location.search).has('send');
-if (SEND_BATTERY && db && navigator.getBattery) {
-  navigator.getBattery().then((battery) => {
-    function sendBattery() {
-      set(ref(db, 'battery'), {
-        level: Math.floor(battery.level * 100),
-        charging: battery.charging,
-        timestamp: Date.now()
-      });
-      console.log('🔋 Battery send:', Math.floor(battery.level * 100));
+
+async function initPhoneBatteryOverlay() {
+  if (!SEND_BATTERY) return;
+
+  if (!('getBattery' in navigator)) {
+    console.warn('⚠️ 이 브라우저는 navigator.getBattery 미지원 — 전송 불가');
+    const t = document.getElementById('batteryText');
+    if (t) t.innerText = '미지원';
+    return;
+  }
+
+  try {
+    const battery = await navigator.getBattery();
+
+    function updateAndSendBattery() {
+      const level = Math.round(battery.level * 100);
+      const charging = battery.charging;
+
+      // 사용자가 준 간단 배터리 오버레이 코드처럼 현재 기기 배터리를 즉시 화면에 표시
+      updateBattery(level, charging);
+
+      // Firebase가 연결된 경우 OBS/메인 오버레이로도 전송
+      if (db) {
+        set(ref(db, 'battery'), {
+          level,
+          charging,
+          timestamp: Date.now()
+        });
+      }
+
+      console.log('🔋 Phone battery:', level + '%', charging ? 'charging' : 'not charging');
     }
-    sendBattery();
-    setInterval(sendBattery, 10000);
-    battery.addEventListener('levelchange', sendBattery);
-    battery.addEventListener('chargingchange', sendBattery);
-  }).catch((e) => console.error('❌ 배터리 전송 실패:', e));
-} else if (SEND_BATTERY) {
-  console.warn('⚠️ 이 브라우저는 navigator.getBattery 미지원 — 전송 불가');
+
+    updateAndSendBattery();
+    setInterval(updateAndSendBattery, 10000);
+    battery.addEventListener('levelchange', updateAndSendBattery);
+    battery.addEventListener('chargingchange', updateAndSendBattery);
+  } catch (e) {
+    console.error('❌ 배터리 전송 실패:', e);
+    const t = document.getElementById('batteryText');
+    if (t) t.innerText = '오류';
+  }
 }
+
+initPhoneBatteryOverlay();
 
 console.log('✅ 프랭크 통합 오버레이 로드 완료');
 
