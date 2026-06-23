@@ -434,9 +434,15 @@ function updateBattery(level, charging) {
   b.style.display = charging ? 'block' : 'none';
 }
 
-function startBatteryDummy() {
-  console.warn('⚠️ 배터리 테스트 모드');
-  setInterval(() => updateBattery(Math.floor(Math.random()*101), Math.random()>0.7), 3000);
+function showBatteryUnavailable() {
+  // 이전엔 랜덤 테스트 값을 뿌려 %가 왜다 갔다 했음.
+  // 이제는 가짜 값 대신 '--%'만 고정 표시한다.
+  const t = document.getElementById('batteryText');
+  const f = document.getElementById('batteryFill');
+  const b = document.getElementById('batteryBolt');
+  if (t) t.innerText = '--%';
+  if (f) f.style.width = '0%';
+  if (b) b.style.display = 'none';
 }
 
 if (db) {
@@ -444,9 +450,9 @@ if (db) {
     if (!snapshot.exists()) return;
     const data = snapshot.val();
     if (data && typeof data.level === 'number') updateBattery(data.level, data.charging || false);
-  }, (error) => { console.error('❌ 배터리 로드 실패:', error); startBatteryDummy(); });
+  }, (error) => { console.error('❌ 배터리 로드 실패:', error); showBatteryUnavailable(); });
 } else {
-  startBatteryDummy();
+  showBatteryUnavailable();
 }
 
 /* ===== GPS 이동거리 (RealtimeIRL) ===== */
