@@ -232,6 +232,66 @@
     0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     50%      { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
   }
+
+  /* ===== Anker Prime A110A (Firebase: ankerBattery) ===== */
+  .anker-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 238px;
+    color: #ffffff;
+    transition: opacity .25s ease, color .25s ease;
+  }
+  .anker-label {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: #8ec5ff;
+  }
+  .anker-battery-icon {
+    width: 34px;
+    height: 17px;
+    border: 1.5px solid rgba(255,255,255,.9);
+    border-radius: 3px;
+    position: relative;
+    overflow: visible;
+    background: rgba(0,0,0,.3);
+    flex: 0 0 auto;
+  }
+  .anker-battery-icon::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: 4px;
+    width: 2px;
+    height: 8px;
+    border-radius: 1px;
+    background: rgba(255,255,255,.9);
+  }
+  #ankerFill {
+    height: 100%;
+    width: 0%;
+    border-radius: 1px;
+    background: #72bc8f;
+    box-shadow: 0 0 7px rgba(114,188,143,.75);
+    transition: width .35s ease, background .25s ease, box-shadow .25s ease;
+  }
+  #ankerLevel { min-width: 42px; font-size: 20px; font-weight: 600; }
+  .anker-meta { font-size: 17px; font-weight: 500; color: rgba(255,255,255,.86); }
+  .anker-dot { color: rgba(255,255,255,.38); font-size: 14px; }
+  #ankerPower, #ankerTemp { min-width: 48px; }
+  .anker-container.warning #ankerFill { background:#de9255; box-shadow:0 0 8px rgba(222,146,85,.78); }
+  .anker-container.critical #ankerFill { background:#e97366; box-shadow:0 0 9px rgba(233,115,102,.9); }
+  .anker-container.stale { opacity:.55; }
+  .anker-container.offline { opacity:.48; }
+  .anker-container.offline .anker-label { color:rgba(255,255,255,.6); }
+  .anker-container.offline #ankerFill { width:0!important; box-shadow:none; background:#7d7a75; }
+  @keyframes ankerCriticalPulse { 50% { opacity:.55; } }
+  .anker-container.critical #ankerLevel { color:#ff8b80; animation:ankerCriticalPulse 1.2s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .anker-container.critical #ankerLevel { animation:none; }
+  }
+
 </style>
 </head>
 <body>
@@ -272,14 +332,26 @@
     <div class="sig-bar"></div>
   </div>
 
-  <!-- 배터리 -->
-  <div class="battery-container" data-tooltip="배터리 잔량">
+  <!-- 휴대폰 배터리 -->
+  <div class="battery-container" data-tooltip="서브폰 배터리 잔량">
     <div id="batteryIcon">
       <div id="batteryFill"></div>
       <div id="batteryBolt">⚡</div>
       <div id="batteryCap"></div>
     </div>
     <span id="batteryText">--%</span>
+  </div>
+
+  <span class="divider"></span>
+
+  <!-- Anker Prime A110A: BELABOX → Firebase ankerBattery -->
+  <div class="anker-container offline" id="ankerBattery" data-tooltip="Anker Prime A110A 상태">
+    <span class="anker-label">POWER</span>
+    <div class="anker-battery-icon" aria-hidden="true"><div id="ankerFill"></div></div>
+    <span id="ankerLevel">--%</span>
+    <span class="anker-meta" id="ankerPower">OFFLINE</span>
+    <span class="anker-dot">·</span>
+    <span class="anker-meta" id="ankerTemp">--°C</span>
   </div>
 
 </div>
@@ -455,6 +527,80 @@ if (db) {
   showBatteryUnavailable();
 }
 
+/* ===== Anker Prime A110A (BELABOX → Firebase) ===== */
+const ANKER_PATH = 'ankerBattery';
+const ANKER_STALE_MS = 30 * 1000;
+const ANKER_OFFLINE_MS = 60 * 1000;
+let _lastAnkerData = null;
+
+function _numOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+function _setAnkerOffline() {
+  const root = document.getElementById('ankerBattery');
+  if (!root) return;
+  root.className = 'anker-container offline';
+  document.getElementById('ankerLevel').innerText = '--%';
+  document.getElementById('ankerFill').style.width = '0%';
+  document.getElementById('ankerPower').innerText = 'OFFLINE';
+  document.getElementById('ankerTemp').innerText = '--°C';
+  scheduleAutoFit();
+}
+function updateAnkerBattery(data) {
+  const root = document.getElementById('ankerBattery');
+  if (!root || !data) return _setAnkerOffline();
+  _lastAnkerData = data;
+
+  const level = _numOrNull(data.level);
+  const input = _numOrNull(data.inputWatts);
+  const output = _numOrNull(data.outputWatts);
+  const temp = _numOrNull(data.temperature);
+  const timestamp = _numOrNull(data.timestamp) || 0;
+  const age = timestamp ? Date.now() - timestamp : Infinity;
+  const connected = data.connected !== false;
+
+  let state = 'anker-container';
+  if (!connected || age >= ANKER_OFFLINE_MS) state += ' offline';
+  else if (age >= ANKER_STALE_MS) state += ' stale';
+  if (level !== null && level <= 10) state += ' critical';
+  else if (level !== null && level <= 20) state += ' warning';
+  root.className = state;
+
+  const safeLevel = level === null ? null : Math.max(0, Math.min(100, Math.round(level)));
+  document.getElementById('ankerLevel').innerText = safeLevel === null ? '--%' : safeLevel + '%';
+  document.getElementById('ankerFill').style.width = (!connected || age >= ANKER_OFFLINE_MS || safeLevel === null) ? '0%' : safeLevel + '%';
+
+  let powerText = 'IDLE';
+  if (!connected || age >= ANKER_OFFLINE_MS) powerText = 'OFFLINE';
+  else if (input !== null && output !== null && input > 0.5 && output > 0.5) powerText = `IN ${Math.round(input)}W / OUT ${Math.round(output)}W`;
+  else if (input !== null && input > 0.5) powerText = `IN ${Math.round(input)}W`;
+  else if (output !== null && output > 0.5) powerText = `OUT ${Math.round(output)}W`;
+  document.getElementById('ankerPower').innerText = powerText;
+  document.getElementById('ankerTemp').innerText = temp === null ? '--°C' : Math.round(temp) + '°C';
+  scheduleAutoFit();
+}
+
+if (db) {
+  onValue(ref(db, ANKER_PATH), (snapshot) => {
+    if (!snapshot.exists()) return _setAnkerOffline();
+    updateAnkerBattery(snapshot.val());
+  }, (error) => {
+    console.error('❌ Anker 배터리 로드 실패:', error);
+    _setAnkerOffline();
+  });
+} else {
+  _setAnkerOffline();
+}
+
+// 오래된 값이 정상처럼 남지 않도록 주기적으로 상태를 재평가
+setInterval(() => { if (_lastAnkerData) updateAnkerBattery(_lastAnkerData); }, 5000);
+
+// 디자인/OBS 배치 확인용: index.html?demo=1
+if (new URLSearchParams(location.search).has('demo')) {
+  updateAnkerBattery({ level:73, temperature:36, inputWatts:0, outputWatts:28.4, connected:true, timestamp:Date.now() });
+}
+
 /* ===== GPS 이동거리 (RealtimeIRL) ===== */
 let totalDistance = 0;
 let previousLocation = null;
@@ -624,7 +770,7 @@ async function initPhoneBatteryOverlay() {
 
 initPhoneBatteryOverlay();
 
-console.log('✅ 프랭크 통합 오버레이 로드 완료');
+console.log('✅  통합 오버레이 로드 완료');
 
 </script>
 
