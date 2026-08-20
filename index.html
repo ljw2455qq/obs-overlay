@@ -565,6 +565,7 @@ function updateAnkerBattery(data) {
   const input = _numOrNull(data.inputWatts);
   const output = _numOrNull(data.outputWatts);
   const timestamp = _numOrNull(data.timestamp) || 0;
+  const remainingSeconds = _numOrNull(data.remainingSeconds);
   const age = timestamp ? Date.now() - timestamp : Infinity;
   const connected = data.connected !== false;
   const model = String(data.model || 'POWER').replace(/[^a-zA-Z0-9._ -]/g, '').trim().slice(0, 16) || 'POWER';
