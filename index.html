@@ -20,7 +20,7 @@
   #overlayInner {
     display: inline-flex;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
     white-space: nowrap;
     line-height: 1;
     transform-origin: right center;
@@ -28,8 +28,8 @@
     transition: transform 0.25s ease;
     will-change: transform;
   }
-  /* 위플랫 시청자수 영역과 겹치지 않도록 왼쪽 430px은 비워둠 */
-  :root { --weflat-safe-left: 430px; }
+  /* 왼쪽 채팅/플랫폼 표시와 겹치지 않도록 안전영역을 확보 */
+  :root { --weflat-safe-left: 520px; }
 
   #overlay {
     overflow: hidden;
@@ -42,10 +42,10 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 20px;
+    gap: 12px;
     background: rgba(0, 0, 0, 0.72);
     backdrop-filter: blur(8px);
-    padding: 0 0 0 22px;
+    padding: 0 0 0 12px;
     border-radius: 0;
     border: none;
     box-shadow: none;
@@ -60,7 +60,7 @@
   .seg {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
+    gap: 5px;
     font-size: 22px;
     font-weight: 400;
     color: #ffffff;
@@ -72,13 +72,13 @@
 
   /* ===== 수익 강조 ===== */
   .income-val { color: #ffffff; font-weight: 600; display: inline-block; transform-origin: center; }
-  .income-goal { font-size: 15px; font-weight: 500; opacity: 0.85; margin-left: 3px; color: #9fd0ff; }
+  .income-goal { font-size: 15px; font-weight: 500; opacity: 0.85; margin-left: 1px; color: #9fd0ff; }
   .income-goal.done { color: #00e676; }
   /* 값 길이가 변해도 칸 너비를 고정해 위치가 흔들리지 않게 함 */
-  #distance .val { display: inline-block; min-width: 94px; }
-  #dailyText   { min-width: 104px; }
-  #weeklyText  { min-width: 128px; }
-  #monthlyText { min-width: 152px; }
+  #distance .val { display: inline-block; min-width: 86px; }
+  #dailyText   { min-width: 88px; }
+  #weeklyText  { min-width: 112px; }
+  #monthlyText { min-width: 136px; }
   @keyframes incomeFlash {
     0%   { transform: scale(1);    filter: brightness(1);   }
     30%  { transform: scale(1.22); filter: brightness(1.9); color: #fff59d; }
@@ -153,7 +153,7 @@
   .battery-container {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     position: relative;
   }
 
@@ -246,7 +246,7 @@
   .anker-container {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
     min-width: 0;
     color: #ffffff;
     transition: opacity .25s ease, color .25s ease;
