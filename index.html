@@ -233,7 +233,7 @@
     50%      { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
   }
 
-  /* ===== Anker Prime A110A (Firebase: ankerBattery) ===== */
+  /* ===== Power Bank (Firebase: ankerBattery) ===== */
   .anker-container {
     display: inline-flex;
     align-items: center;
@@ -344,9 +344,9 @@
 
   <span class="divider"></span>
 
-  <!-- Anker Prime A110A: BELABOX → Firebase ankerBattery -->
-  <div class="anker-container offline" id="ankerBattery" data-tooltip="Anker Prime A110A 상태">
-    <span class="anker-label">POWER</span>
+  <!-- Power Bank: IRL 서버/BLE 수집기 → Firebase ankerBattery -->
+  <div class="anker-container offline" id="ankerBattery" data-tooltip="보조배터리 상태">
+    <span class="anker-label" id="ankerModel">POWER</span>
     <div class="anker-battery-icon" aria-hidden="true"><div id="ankerFill"></div></div>
     <span id="ankerLevel">--%</span>
     <span class="anker-meta" id="ankerPower">OFFLINE</span>
@@ -527,7 +527,7 @@ if (db) {
   showBatteryUnavailable();
 }
 
-/* ===== Anker Prime A110A (BELABOX → Firebase) ===== */
+/* ===== Power Bank (IRL 서버/BLE 수집기 → Firebase) ===== */
 const ANKER_PATH = 'ankerBattery';
 const ANKER_STALE_MS = 30 * 1000;
 const ANKER_OFFLINE_MS = 60 * 1000;
@@ -541,6 +541,7 @@ function _setAnkerOffline() {
   const root = document.getElementById('ankerBattery');
   if (!root) return;
   root.className = 'anker-container offline';
+  document.getElementById('ankerModel').innerText = 'POWER';
   document.getElementById('ankerLevel').innerText = '--%';
   document.getElementById('ankerFill').style.width = '0%';
   document.getElementById('ankerPower').innerText = 'OFFLINE';
@@ -557,8 +558,10 @@ function updateAnkerBattery(data) {
   const output = _numOrNull(data.outputWatts);
   const temp = _numOrNull(data.temperature);
   const timestamp = _numOrNull(data.timestamp) || 0;
+  const remainingSeconds = _numOrNull(data.remainingSeconds);
   const age = timestamp ? Date.now() - timestamp : Infinity;
   const connected = data.connected !== false;
+  const model = String(data.model || 'POWER').replace(/[^a-zA-Z0-9._ -]/g, '').trim().slice(0, 16) || 'POWER';
 
   let state = 'anker-container';
   if (!connected || age >= ANKER_OFFLINE_MS) state += ' offline';
@@ -568,6 +571,7 @@ function updateAnkerBattery(data) {
   root.className = state;
 
   const safeLevel = level === null ? null : Math.max(0, Math.min(100, Math.round(level)));
+  document.getElementById('ankerModel').innerText = model;
   document.getElementById('ankerLevel').innerText = safeLevel === null ? '--%' : safeLevel + '%';
   document.getElementById('ankerFill').style.width = (!connected || age >= ANKER_OFFLINE_MS || safeLevel === null) ? '0%' : safeLevel + '%';
 
@@ -577,7 +581,16 @@ function updateAnkerBattery(data) {
   else if (input !== null && input > 0.5) powerText = `IN ${Math.round(input)}W`;
   else if (output !== null && output > 0.5) powerText = `OUT ${Math.round(output)}W`;
   document.getElementById('ankerPower').innerText = powerText;
-  document.getElementById('ankerTemp').innerText = temp === null ? '--°C' : Math.round(temp) + '°C';
+  if (data.estimated === true && remainingSeconds !== null) {
+    const totalMinutes = Math.max(0, Math.floor(remainingSeconds / 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    document.getElementById('ankerTemp').innerText = `${hours}:${String(minutes).padStart(2, '0')} 남음`;
+    root.dataset.tooltip = `${model} 예상 잔량 (시간 기반 계산)`;
+  } else {
+    document.getElementById('ankerTemp').innerText = temp === null ? '--°C' : Math.round(temp) + '°C';
+    root.dataset.tooltip = `${model} 실측 상태`;
+  }
   scheduleAutoFit();
 }
 
@@ -598,7 +611,7 @@ setInterval(() => { if (_lastAnkerData) updateAnkerBattery(_lastAnkerData); }, 5
 
 // 디자인/OBS 배치 확인용: index.html?demo=1
 if (new URLSearchParams(location.search).has('demo')) {
-  updateAnkerBattery({ level:73, temperature:36, inputWatts:0, outputWatts:28.4, connected:true, timestamp:Date.now() });
+  updateAnkerBattery({ model:'A110A', level:73, temperature:36, inputWatts:0, outputWatts:28.4, connected:true, timestamp:Date.now() });
 }
 
 /* ===== GPS 이동거리 (RealtimeIRL) ===== */
