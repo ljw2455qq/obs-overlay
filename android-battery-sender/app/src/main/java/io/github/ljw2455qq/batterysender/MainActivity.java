@@ -1,6 +1,7 @@
 package io.github.ljw2455qq.batterysender;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -148,6 +149,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override
+    @SuppressLint("UnspecifiedRegisterReceiverFlag") // API 32 이하에는 exported 플래그 오버로드가 없음
     protected void onStart() {
         super.onStart();
         IntentFilter filter = new IntentFilter(BatteryTelemetryService.ACTION_STATUS);

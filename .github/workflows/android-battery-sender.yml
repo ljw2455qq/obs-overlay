@@ -34,11 +34,16 @@ jobs:
         shell: bash
         run: |
           for attempt in 1 2 3; do
-            gradle testDebugUnitTest lintDebug assembleDebug && exit 0
-            if [ "$attempt" -lt 3 ]; then
-              echo "Gradle download/build failed; retrying in $((attempt * 30)) seconds..."
-              sleep $((attempt * 30))
+            set +e
+            gradle testDebugUnitTest lintDebug assembleDebug 2>&1 | tee gradle-build.log
+            status=${PIPESTATUS[0]}
+            set -e
+            [ "$status" -eq 0 ] && exit 0
+            if [ "$attempt" -ge 3 ] || ! grep -q 'status code 429' gradle-build.log; then
+              exit "$status"
             fi
+            echo "Dependency download was rate-limited; retrying in $((attempt * 30)) seconds..."
+            sleep $((attempt * 30))
           done
           exit 1
       - uses: actions/upload-artifact@v4
