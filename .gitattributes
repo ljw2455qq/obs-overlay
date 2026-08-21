@@ -1,0 +1,3 @@
+mudi7/*.sh text eol=lf
+mudi7/*.init text eol=lf
+mudi7/*.example text eol=lf
