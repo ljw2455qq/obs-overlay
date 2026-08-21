@@ -168,7 +168,11 @@
     align-items: center;
     gap: 4px;
     position: relative;
+    transition: opacity .25s ease;
   }
+  .battery-container.stale { opacity: 0.55; }
+  .battery-container.offline { opacity: 0.42; }
+  .battery-container.offline #batteryText { color: #b8b8b8; }
 
   #batteryIcon {
     width: 36px;
@@ -361,7 +365,7 @@
   </div>
 
   <!-- 휴대폰 배터리 -->
-  <div class="battery-container" data-tooltip="서브폰 배터리 잔량">
+  <div class="battery-container offline" id="phoneBattery" data-tooltip="서브폰 배터리: OFFLINE">
     <div id="batteryIcon">
       <div id="batteryFill"></div>
       <div id="batteryBolt">⚡</div>
@@ -514,7 +518,13 @@ window.addEventListener('load', autoFitOverlay);
 window.addEventListener('resize', autoFitOverlay);
 setInterval(autoFitOverlay, 300);
 
-/* ===== 배터리 (battery) ===== */
+const demoMode = new URLSearchParams(location.search).has('demo');
+
+/* ===== 서브폰 배터리 (Firebase: battery) ===== */
+const PHONE_BATTERY_STALE_MS = 90 * 1000;
+const PHONE_BATTERY_OFFLINE_MS = 180 * 1000;
+let _lastPhoneBattery = null;
+
 function getBatteryLevelClass(level) {
   const r = Math.floor(level / 10) * 10;
   const map = {100:'level-100',90:'level-90',80:'level-80',70:'level-70',60:'level-60',50:'level-50',40:'level-40',30:'level-30',20:'level-20',10:'level-10',0:'level-0'};
@@ -522,6 +532,7 @@ function getBatteryLevelClass(level) {
 }
 
 function updateBattery(level, charging) {
+  const root = document.getElementById('phoneBattery');
   const t = document.getElementById('batteryText');
   const f = document.getElementById('batteryFill');
   const b = document.getElementById('batteryBolt');
@@ -530,6 +541,7 @@ function updateBattery(level, charging) {
   f.style.width = level + '%';
   f.className = getBatteryLevelClass(level);
   b.style.display = charging ? 'block' : 'none';
+  if (root) root.className = 'battery-container';
 }
 
 function showBatteryUnavailable() {
@@ -538,19 +550,48 @@ function showBatteryUnavailable() {
   const t = document.getElementById('batteryText');
   const f = document.getElementById('batteryFill');
   const b = document.getElementById('batteryBolt');
+  const root = document.getElementById('phoneBattery');
   if (t) t.innerText = '--%';
   if (f) f.style.width = '0%';
   if (b) b.style.display = 'none';
+  if (root) {
+    root.className = 'battery-container offline';
+    root.dataset.tooltip = '서브폰 배터리: OFFLINE';
+  }
 }
 
-if (db) {
+function updatePhoneBattery(data) {
+  if (!data || typeof data.level !== 'number') return showBatteryUnavailable();
+  _lastPhoneBattery = data;
+
+  const root = document.getElementById('phoneBattery');
+  const timestamp = Number(data.timestamp);
+  const hasHeartbeat = Number.isFinite(timestamp) && timestamp > 0;
+  const age = hasHeartbeat ? Date.now() - timestamp : 0;
+  const offline = data.connected === false || (hasHeartbeat && age >= PHONE_BATTERY_OFFLINE_MS);
+  const stale = !offline && hasHeartbeat && age >= PHONE_BATTERY_STALE_MS;
+  if (offline) return showBatteryUnavailable();
+
+  updateBattery(Math.round(data.level), data.charging === true);
+  if (stale) root.className = 'battery-container stale';
+  root.dataset.tooltip = hasHeartbeat
+    ? `서브폰 배터리 ${Math.round(data.level)}%${stale ? ' · 갱신 지연' : ' · 연결됨'}`
+    : `서브폰 배터리 ${Math.round(data.level)}% · 기존 브라우저 송신`;
+}
+
+if (db && !demoMode) {
   onValue(ref(db, 'battery'), (snapshot) => {
-    if (!snapshot.exists()) return;
-    const data = snapshot.val();
-    if (data && typeof data.level === 'number') updateBattery(data.level, data.charging || false);
+    if (!snapshot.exists()) return showBatteryUnavailable();
+    updatePhoneBattery(snapshot.val());
   }, (error) => { console.error('❌ 배터리 로드 실패:', error); showBatteryUnavailable(); });
-} else {
+} else if (!demoMode) {
   showBatteryUnavailable();
+}
+
+if (!demoMode) {
+  setInterval(() => { if (_lastPhoneBattery) updatePhoneBattery(_lastPhoneBattery); }, 10000);
+} else {
+  updatePhoneBattery({ level:48, charging:false, connected:true, timestamp:Date.now() });
 }
 
 /* ===== Power Bank (IRL 서버/BLE 수집기 → Firebase) ===== */
@@ -625,8 +666,6 @@ if (db) {
 
 // 오래된 값이 정상처럼 남지 않도록 주기적으로 상태를 재평가
 setInterval(() => { if (_lastAnkerData) updateAnkerBattery(_lastAnkerData); }, 5000);
-
-const demoMode = new URLSearchParams(location.search).has('demo');
 
 // 디자인/OBS 배치 확인용: index.html?demo=1
 if (demoMode) {
