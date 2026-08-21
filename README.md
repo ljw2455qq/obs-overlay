@@ -53,3 +53,15 @@ POWER_BANK_OVERLAY_FIREBASE_AUTH_TOKEN=
 ## 실제 A110A BLE 연동 상태
 
 현재 기본 연동은 시간 기반 예상값입니다. Anker Prime A110A의 BLE 프로토콜은 비공식 역공학 구현이 있으나, 장비/펌웨어별 검증이 필요하므로 이 저장소는 특정 BLE 패키지를 프로덕션 의존성으로 고정하지 않습니다. 실측 수집기를 추가할 때도 위 JSON 스키마를 그대로 사용하면 오버레이 수정 없이 교체할 수 있습니다.
+
+## 서브폰 배터리 전용 송신 앱
+
+`android-battery-sender`는 삼성 인터넷을 열지 않아도 서브폰 배터리를 Firebase `battery` 노드로 전송하는 Android 앱입니다.
+
+- 배터리 변화 시 즉시 전송하고 30초마다 생존 신호를 보냅니다.
+- 지속 알림과 포그라운드 서비스로 화면이 꺼진 상태에서도 동작합니다.
+- 재부팅 후 이전에 실행 중이던 경우 자동으로 다시 시작합니다.
+- Firebase 인증 토큰은 Android Keystore로 암호화해 저장합니다.
+- 90초간 값이 없으면 오버레이가 흐려지고, 180초가 지나면 `OFFLINE`으로 표시합니다.
+
+설치와 설정 방법은 [`android-battery-sender/README.md`](android-battery-sender/README.md)를 확인하세요.
