@@ -1,0 +1,4 @@
+config mudi_signal 'main'
+  option firebase_url 'https://YOUR_PROJECT-default-rtdb.firebaseio.com/mudiSignal.json'
+  option auth_token ''
+  option interval '5'

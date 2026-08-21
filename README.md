@@ -1,6 +1,16 @@
 # OBS 통합 오버레이
 
-GitHub Pages/OBS 브라우저 소스에서 이동거리, 수익, 날씨, 휴대폰 배터리와 보조배터리 상태를 한 줄로 표시합니다.
+GitHub Pages/OBS 브라우저 소스에서 이동거리, 수익, 날씨, 휴대폰 배터리, Mudi 7 LTE/5G 신호와 보조배터리 상태를 한 줄로 표시합니다.
+
+## Mudi 7 LTE/5G 신호 표시
+
+오버레이는 Firebase Realtime Database의 `mudiSignal` 노드를 읽습니다. 기존 RealtimeIRL 갱신 간격 기반 신호 막대 대신 Mudi 7이 측정한 실제 셀룰러 `RSRP`로 막대 수를 계산하고, `LTE`/`5G`를 함께 표시합니다. 마우스를 올리면 RSRP·RSRQ·SINR·밴드를 확인할 수 있습니다.
+
+Mudi 7에서 상시 전송기를 설치하는 방법은 [`mudi7/README.md`](mudi7/README.md)를 따르세요. 전송기가 라우터에서 직접 실행되므로 서브폰의 Chrome이나 IRL 방송 시스템 화면을 닫아도 계속 갱신됩니다.
+
+- 15초 동안 갱신되지 않으면 회색으로 표시합니다.
+- 60초가 지나면 `OFFLINE`으로 표시합니다.
+- `index.html?demo=1`에서는 `5G` 3칸 신호를 미리 볼 수 있습니다.
 
 ## 보조배터리 표시
 
