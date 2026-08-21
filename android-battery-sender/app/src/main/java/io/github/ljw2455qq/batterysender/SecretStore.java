@@ -72,4 +72,3 @@ final class SecretStore {
         return generator.generateKey();
     }
 }
-

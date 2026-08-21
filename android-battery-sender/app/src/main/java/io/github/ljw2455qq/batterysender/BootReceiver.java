@@ -15,4 +15,3 @@ public final class BootReceiver extends BroadcastReceiver {
         else context.startService(service);
     }
 }
-

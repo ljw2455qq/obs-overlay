@@ -39,4 +39,3 @@ final class ConfigStore {
         preferences(context).edit().putString(KEY_LAST_STATUS, status).apply();
     }
 }
-

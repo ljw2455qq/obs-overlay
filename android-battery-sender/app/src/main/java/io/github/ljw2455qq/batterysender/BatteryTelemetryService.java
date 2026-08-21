@@ -195,4 +195,3 @@ public final class BatteryTelemetryService extends Service {
         return null;
     }
 }
-
