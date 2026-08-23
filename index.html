@@ -514,6 +514,8 @@ window.addEventListener('load', autoFitOverlay);
 window.addEventListener('resize', autoFitOverlay);
 setInterval(autoFitOverlay, 300);
 
+const demoMode = new URLSearchParams(location.search).has('demo');
+
 /* ===== 배터리 (battery) ===== */
 function getBatteryLevelClass(level) {
   const r = Math.floor(level / 10) * 10;
@@ -573,23 +575,58 @@ function _setAnkerOffline() {
   document.getElementById('ankerPower').innerText = 'OFFLINE';
   scheduleAutoFit();
 }
+function _projectAnkerBattery(data, now = Date.now()) {
+  const projected = { ...data };
+  const level = _numOrNull(data.level);
+  const outputWatts = _numOrNull(data.outputWatts);
+  const remainingSeconds = _numOrNull(data.remainingSeconds);
+  const timestamp = _numOrNull(data.timestamp);
+  const elapsedSeconds = timestamp === null ? 0 : Math.max(0, (now - timestamp) / 1000);
+  const canProject = data.estimated === true &&
+    data.running === true &&
+    data.connected !== false &&
+    level !== null &&
+    outputWatts !== null &&
+    outputWatts > 0 &&
+    remainingSeconds !== null &&
+    remainingSeconds > 0 &&
+    timestamp !== null &&
+    timestamp > 0;
+
+  if (canProject) {
+    const projectedRemaining = Math.max(0, remainingSeconds - elapsedSeconds);
+    projected.level = Math.max(0, level * projectedRemaining / remainingSeconds);
+    projected.remainingSeconds = Math.round(projectedRemaining);
+    if (projectedRemaining <= 0) {
+      projected.level = 0;
+      projected.running = false;
+      projected.outputWatts = 0;
+    }
+  }
+
+  return { projected, canProject };
+}
 function updateAnkerBattery(data) {
   const root = document.getElementById('ankerBattery');
   if (!root || !data) return _setAnkerOffline();
   _lastAnkerData = data;
 
-  const level = _numOrNull(data.level);
-  const input = _numOrNull(data.inputWatts);
-  const output = _numOrNull(data.outputWatts);
+  const projection = _projectAnkerBattery(data);
+  const displayData = projection.projected;
+  const level = _numOrNull(displayData.level);
+  const input = _numOrNull(displayData.inputWatts);
+  const output = _numOrNull(displayData.outputWatts);
   const timestamp = _numOrNull(data.timestamp) || 0;
-  const remainingSeconds = _numOrNull(data.remainingSeconds);
   const age = timestamp ? Date.now() - timestamp : Infinity;
   const connected = data.connected !== false;
   const model = String(data.model || 'POWER').replace(/[^a-zA-Z0-9._ -]/g, '').trim().slice(0, 16) || 'POWER';
+  const hasEstimatedState = data.estimated === true && level !== null && timestamp > 0;
+  const locallyProjected = hasEstimatedState && age >= ANKER_STALE_MS;
+  const unavailable = !connected || (!hasEstimatedState && age >= ANKER_OFFLINE_MS);
 
   let state = 'anker-container';
-  if (!connected || age >= ANKER_OFFLINE_MS) state += ' offline';
-  else if (age >= ANKER_STALE_MS) state += ' stale';
+  if (unavailable) state += ' offline';
+  else if (!hasEstimatedState && age >= ANKER_STALE_MS) state += ' stale';
   if (level !== null && level <= 10) state += ' critical';
   else if (level !== null && level <= 20) state += ' warning';
   root.className = state;
@@ -597,21 +634,21 @@ function updateAnkerBattery(data) {
   const safeLevel = level === null ? null : Math.max(0, Math.min(100, Math.round(level)));
   document.getElementById('ankerModel').innerText = 'P';
   document.getElementById('ankerLevel').innerText = safeLevel === null ? '--%' : safeLevel + '%';
-  document.getElementById('ankerFill').style.width = (!connected || age >= ANKER_OFFLINE_MS || safeLevel === null) ? '0%' : safeLevel + '%';
+  document.getElementById('ankerFill').style.width = (unavailable || safeLevel === null) ? '0%' : safeLevel + '%';
 
   let powerText = 'IDLE';
-  if (!connected || age >= ANKER_OFFLINE_MS) powerText = 'OFFLINE';
+  if (unavailable) powerText = 'OFFLINE';
   else if (input !== null && output !== null && input > 0.5 && output > 0.5) powerText = `IN ${Math.round(input)}W / OUT ${Math.round(output)}W`;
   else if (input !== null && input > 0.5) powerText = `IN ${Math.round(input)}W`;
   else if (output !== null && output > 0.5) powerText = `OUT ${Math.round(output)}W`;
   document.getElementById('ankerPower').innerText = powerText;
   root.dataset.tooltip = data.estimated === true
-    ? `${model} 예상 잔량 (시간 기반 계산)`
+    ? `${model} 예상 잔량 (${locallyProjected ? (projection.canProject ? '서버 연결 대기 · 오버레이 자체 계산 중' : '서버 연결 대기 · 현재 값 유지') : '서버와 동기화됨'})`
     : `${model} 실측 상태`;
   scheduleAutoFit();
 }
 
-if (db) {
+if (db && !demoMode) {
   onValue(ref(db, ANKER_PATH), (snapshot) => {
     if (!snapshot.exists()) return _setAnkerOffline();
     updateAnkerBattery(snapshot.val());
@@ -619,18 +656,20 @@ if (db) {
     console.error('❌ Anker 배터리 로드 실패:', error);
     _setAnkerOffline();
   });
-} else {
+} else if (!demoMode) {
   _setAnkerOffline();
 }
 
 // 오래된 값이 정상처럼 남지 않도록 주기적으로 상태를 재평가
 setInterval(() => { if (_lastAnkerData) updateAnkerBattery(_lastAnkerData); }, 5000);
 
-const demoMode = new URLSearchParams(location.search).has('demo');
-
 // 디자인/OBS 배치 확인용: index.html?demo=1
 if (demoMode) {
-  updateAnkerBattery({ model:'A110A', level:73, temperature:36, inputWatts:0, outputWatts:28.4, connected:true, timestamp:Date.now() });
+  updateAnkerBattery({
+    model:'A110A', level:73, inputWatts:0, outputWatts:28.4,
+    remainingSeconds:3600, connected:true, running:true, estimated:true,
+    timestamp:Date.now() - (10 * 60 * 1000)
+  });
 }
 
 /* ===== GPS 이동거리 (RealtimeIRL) ===== */
