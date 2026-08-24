@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# GL.iNet Mudi 7 (GL-E5800) cellular signal -> Firebase Realtime Database
+# GL.iNet Mudi 7 (GL-E5800) cellular signal + battery -> Firebase Realtime Database
 
 . /lib/functions.sh
 
@@ -52,8 +52,52 @@ bars_from_rsrp() {
   fi
 }
 
+read_battery() {
+  BATTERY_LEVEL=''
+  BATTERY_STATUS='Unknown'
+  BATTERY_CHARGING=false
+  BATTERY_CONNECTED=false
+
+  for supply_path in /sys/class/power_supply/*; do
+    [ -d "$supply_path" ] || continue
+    [ -r "$supply_path/capacity" ] || continue
+
+    supply_type="$(sed -n '1p' "$supply_path/type" 2>/dev/null)"
+    supply_name="$(basename "$supply_path" | tr '[:upper:]' '[:lower:]')"
+    case "$(printf '%s' "$supply_type" | tr '[:upper:]' '[:lower:]')" in
+      battery) ;;
+      *)
+        case "$supply_name" in
+          *battery*|*bms*) ;;
+          *) continue ;;
+        esac
+        ;;
+    esac
+
+    capacity="$(sed -n '1p' "$supply_path/capacity" 2>/dev/null | tr -d '[:space:]')"
+    case "$capacity" in ''|*[!0-9]*) continue ;; esac
+    [ "$capacity" -le 100 ] 2>/dev/null || continue
+
+    status="$(sed -n '1p' "$supply_path/status" 2>/dev/null | tr -d '\r\n')"
+    [ -n "$status" ] || status='Unknown'
+    case "$(printf '%s' "$status" | tr '[:upper:]' '[:lower:]')" in
+      charging) BATTERY_CHARGING=true ;;
+    esac
+
+    BATTERY_LEVEL="$capacity"
+    BATTERY_STATUS="$status"
+    BATTERY_CONNECTED=true
+    return 0
+  done
+
+  return 1
+}
+
 send_offline() {
-  firebase_put '{"source":"mudi7","connected":false,"timestamp":{".sv":"timestamp"}}'
+  read_battery
+  battery_level="$(json_number "$BATTERY_LEVEL")"
+  battery_status="$(json_text "$BATTERY_STATUS")"
+  firebase_put "{\"source\":\"mudi7\",\"connected\":false,\"batteryConnected\":${BATTERY_CONNECTED},\"batteryLevel\":${battery_level},\"batteryStatus\":\"${battery_status}\",\"batteryCharging\":${BATTERY_CHARGING},\"timestamp\":{\".sv\":\"timestamp\"}}"
 }
 
 send_signal() {
@@ -87,7 +131,10 @@ send_signal() {
     *NR*|*5G*) rat='5G' ;;
     *) rat='LTE' ;;
   esac
-  payload="{\"source\":\"mudi7\",\"connected\":true,\"rat\":\"${rat}\",\"mode\":\"$(json_text "$mode")\",\"rsrp\":$(json_number "$rsrp"),\"rsrq\":$(json_number "$rsrq"),\"sinr\":$(json_number "$sinr"),\"band\":\"$(json_text "$band")\",\"bars\":${bars},\"timestamp\":{\".sv\":\"timestamp\"}}"
+  read_battery
+  battery_level="$(json_number "$BATTERY_LEVEL")"
+  battery_status="$(json_text "$BATTERY_STATUS")"
+  payload="{\"source\":\"mudi7\",\"connected\":true,\"rat\":\"${rat}\",\"mode\":\"$(json_text "$mode")\",\"rsrp\":$(json_number "$rsrp"),\"rsrq\":$(json_number "$rsrq"),\"sinr\":$(json_number "$sinr"),\"band\":\"$(json_text "$band")\",\"bars\":${bars},\"batteryConnected\":${BATTERY_CONNECTED},\"batteryLevel\":${battery_level},\"batteryStatus\":\"${battery_status}\",\"batteryCharging\":${BATTERY_CHARGING},\"timestamp\":{\".sv\":\"timestamp\"}}"
   firebase_put "$payload"
 }
 
