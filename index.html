@@ -817,8 +817,22 @@ function setMudiBatteryOffline(message = 'OFFLINE') {
   root.dataset.tooltip = `MUDI7 배터리: ${message}`;
   scheduleAutoFit();
 }
-function updateMudiBattery(data, manual = false) {
+function estimatedMudiBatteryLevel(data, now = Date.now()) {
   const level = signalNumOrNull(data?.batteryLevel);
+  if (level === null) return null;
+  if (
+    data?.enabled !== true || data?.estimated !== true || data?.running !== true
+    || data?.connected === false || data?.batteryConnected === false
+    || data?.batteryCharging === true
+  ) return level;
+  const runtimeHours = signalNumOrNull(data?.fullRuntimeHours);
+  const timestamp = signalNumOrNull(data?.timestamp);
+  if (runtimeHours === null || runtimeHours <= 0 || timestamp === null || timestamp <= 0) return level;
+  const elapsedHours = Math.max(0, now - timestamp) / 3600000;
+  return Math.max(0, level - (elapsedHours * 100 / runtimeHours));
+}
+function updateMudiBattery(data, manual = false) {
+  const level = manual ? estimatedMudiBatteryLevel(data) : signalNumOrNull(data?.batteryLevel);
   const timestamp = signalNumOrNull(data?.timestamp) || 0;
   const age = timestamp ? Date.now() - timestamp : Infinity;
   const available = data?.batteryConnected !== false && level !== null;
@@ -847,7 +861,8 @@ function updateMudiBattery(data, manual = false) {
     'not charging': '충전 안 함',
     unknown: '상태 확인 중'
   };
-  root.dataset.tooltip = `MUDI7 배터리 ${safeLevel}% · ${statusLabels[rawStatus] || rawStatus.slice(0, 24)}${manual ? ' · 수동 입력' : (stale ? ' · 갱신 지연' : '')}`;
+  const estimateLabel = manual && data?.estimated === true && data?.running === true ? ' · 자동 계산' : '';
+  root.dataset.tooltip = `MUDI7 배터리 ${safeLevel}% · ${statusLabels[rawStatus] || rawStatus.slice(0, 24)}${manual ? ' · 수동 입력' + estimateLabel : (stale ? ' · 갱신 지연' : '')}`;
   scheduleAutoFit();
 }
 function setMudiSignalOffline() {
