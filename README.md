@@ -8,8 +8,14 @@ GitHub Pages/OBS 브라우저 소스에서 이동거리, 수익, 날씨, 휴대�
 
 Mudi 7에서 상시 전송기를 설치하는 방법은 [`mudi7/README.md`](mudi7/README.md)를 따르세요. 전송기가 라우터에서 직접 실행되므로 서브폰의 Chrome이나 IRL 방송 시스템 화면을 닫아도 계속 갱신됩니다.
 
-- 15초 동안 갱신되지 않으면 회색으로 표시합니다.
-- 60초가 지나면 `OFFLINE`으로 표시합니다.
+메인 IRL 제어판에서 수동으로 입력한 값은 Firebase의 `mudiManual` 노드에 저장됩니다. `enabled: true`인 동안에는 수동 배터리·LTE/5G·신호 칸이 자동 `mudiSignal`보다 우선하며, 제어판에서 **자동 센서 사용**을 누르면 `enabled: false`가 저장되어 자동값으로 돌아갑니다. 수동값은 직접 해제할 때까지 유지되므로 오래되어도 회색으로 바뀌지 않습니다.
+
+```json
+{"enabled":true,"batteryLevel":82,"batteryCharging":false,"connected":true,"rat":"5G","bars":3,"source":"irl-manual","timestamp":1787529600000}
+```
+
+- 자동 `mudiSignal`은 15초 동안 갱신되지 않으면 회색으로 표시합니다.
+- 자동 `mudiSignal`은 60초가 지나면 `OFFLINE`으로 표시합니다.
 - `index.html?demo=1`에서는 `5G` 3칸 신호와 MUDI7 배터리 82%를 미리 볼 수 있습니다.
 
 ## 보조배터리 표시

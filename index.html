@@ -404,7 +404,7 @@
       <span class="anker-meta" id="ankerPower">OFFLINE</span>
     </div>
 
-    <!-- Mudi 7 battery: router transmitter → Firebase mudiSignal -->
+    <!-- Mudi 7 battery: mudiManual 수동 입력 또는 mudiSignal 자동 센서 -->
     <div class="mudi-battery-container offline" id="mudiBattery" data-tooltip="MUDI7 배터리 상태">
       <span class="mudi-battery-label">M</span>
       <div class="mudi-battery-icon" aria-hidden="true"><div id="mudiBatteryFill"></div></div>
@@ -777,9 +777,11 @@ try {
 
 /* ===== Mudi 7 LTE/5G 신호 (Firebase: mudiSignal) ===== */
 const MUDI_SIGNAL_PATH = 'mudiSignal';
+const MUDI_MANUAL_PATH = 'mudiManual';
 const MUDI_SIGNAL_STALE_MS = 15 * 1000;
 const MUDI_SIGNAL_OFFLINE_MS = 60 * 1000;
 let _lastMudiSignal = null;
+let _lastMudiManual = null;
 const signalBars = document.querySelectorAll('#signal .sig-bar');
 function signalNumOrNull(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -815,16 +817,16 @@ function setMudiBatteryOffline(message = 'OFFLINE') {
   root.dataset.tooltip = `MUDI7 배터리: ${message}`;
   scheduleAutoFit();
 }
-function updateMudiBattery(data) {
+function updateMudiBattery(data, manual = false) {
   const level = signalNumOrNull(data?.batteryLevel);
   const timestamp = signalNumOrNull(data?.timestamp) || 0;
   const age = timestamp ? Date.now() - timestamp : Infinity;
   const available = data?.batteryConnected !== false && level !== null;
-  const offline = !available || age >= MUDI_SIGNAL_OFFLINE_MS;
+  const offline = !available || (!manual && age >= MUDI_SIGNAL_OFFLINE_MS);
   if (offline) return setMudiBatteryOffline(available ? 'OFFLINE' : '센서 확인 필요');
 
   const root = document.getElementById('mudiBattery');
-  const stale = age >= MUDI_SIGNAL_STALE_MS;
+  const stale = !manual && age >= MUDI_SIGNAL_STALE_MS;
   const safeLevel = Math.max(0, Math.min(100, Math.round(level)));
   const charging = data.batteryCharging === true;
   let state = 'mudi-battery-container';
@@ -845,7 +847,7 @@ function updateMudiBattery(data) {
     'not charging': '충전 안 함',
     unknown: '상태 확인 중'
   };
-  root.dataset.tooltip = `MUDI7 배터리 ${safeLevel}% · ${statusLabels[rawStatus] || rawStatus.slice(0, 24)}${stale ? ' · 갱신 지연' : ''}`;
+  root.dataset.tooltip = `MUDI7 배터리 ${safeLevel}% · ${statusLabels[rawStatus] || rawStatus.slice(0, 24)}${manual ? ' · 수동 입력' : (stale ? ' · 갱신 지연' : '')}`;
   scheduleAutoFit();
 }
 function setMudiSignalOffline() {
@@ -854,13 +856,12 @@ function setMudiSignalOffline() {
   setSignalLevel(0, '#8e8e93');
   root.dataset.tooltip = 'Mudi 7 신호: OFFLINE';
 }
-function updateMudiSignal(data) {
+function updateMudiSignal(data, manual = false) {
   if (!data) {
     setMudiBatteryOffline();
     return setMudiSignalOffline();
   }
-  _lastMudiSignal = data;
-  updateMudiBattery(data);
+  updateMudiBattery(data, manual);
 
   const root = document.getElementById('signal');
   const rsrp = signalNumOrNull(data.rsrp);
@@ -868,8 +869,8 @@ function updateMudiSignal(data) {
   const sinr = signalNumOrNull(data.sinr);
   const timestamp = signalNumOrNull(data.timestamp) || 0;
   const age = timestamp ? Date.now() - timestamp : Infinity;
-  const offline = data.connected === false || age >= MUDI_SIGNAL_OFFLINE_MS;
-  const stale = !offline && age >= MUDI_SIGNAL_STALE_MS;
+  const offline = data.connected === false || (!manual && age >= MUDI_SIGNAL_OFFLINE_MS);
+  const stale = !manual && !offline && age >= MUDI_SIGNAL_STALE_MS;
   const mode = String(data.mode || data.rat || '').toUpperCase();
   const rat = mode.includes('NR') || mode.includes('5G') ? '5G' : (mode ? 'LTE' : '--');
   const reportedBars = Math.round(signalNumOrNull(data.bars) ?? -1);
@@ -879,7 +880,7 @@ function updateMudiSignal(data) {
   document.getElementById('signalType').innerText = rat;
   setSignalLevel(level, signalColor(level, stale));
 
-  const details = [`Mudi 7 ${rat}`, stale ? '갱신 지연' : '연결됨'];
+  const details = [`Mudi 7 ${rat}`, manual ? '수동 입력' : (stale ? '갱신 지연' : '연결됨')];
   if (rsrp !== null) details.push(`RSRP ${rsrp} dBm`);
   if (rsrq !== null) details.push(`RSRQ ${rsrq} dB`);
   if (sinr !== null) details.push(`SINR ${sinr} dB`);
@@ -888,27 +889,42 @@ function updateMudiSignal(data) {
   scheduleAutoFit();
 }
 
+function renderMudiStatus() {
+  const manual = _lastMudiManual?.enabled === true;
+  updateMudiSignal(manual ? _lastMudiManual : _lastMudiSignal, manual);
+}
+
 if (db && !demoMode) {
   onValue(ref(db, MUDI_SIGNAL_PATH), (snapshot) => {
-    if (!snapshot.exists()) return updateMudiSignal(null);
-    updateMudiSignal(snapshot.val());
+    _lastMudiSignal = snapshot.exists() ? snapshot.val() : null;
+    renderMudiStatus();
   }, (error) => {
     console.error('❌ Mudi 7 신호 로드 실패:', error);
-    updateMudiSignal(null);
+    _lastMudiSignal = null;
+    renderMudiStatus();
+  });
+  onValue(ref(db, MUDI_MANUAL_PATH), (snapshot) => {
+    _lastMudiManual = snapshot.exists() ? snapshot.val() : null;
+    renderMudiStatus();
+  }, (error) => {
+    console.error('❌ Mudi 7 수동 상태 로드 실패:', error);
+    _lastMudiManual = null;
+    renderMudiStatus();
   });
 } else if (!demoMode) {
-  updateMudiSignal(null);
+  renderMudiStatus();
 }
 if (!demoMode) {
-  setInterval(() => { if (_lastMudiSignal) updateMudiSignal(_lastMudiSignal); }, 5000);
+  setInterval(renderMudiStatus, 5000);
 }
 
 if (demoMode) {
-  updateMudiSignal({
+  _lastMudiSignal = {
     rat:'5G', mode:'NR5G-SA', rsrp:-91, rsrq:-10, sinr:18, band:'n78', bars:3,
     connected:true, batteryConnected:true, batteryLevel:82,
     batteryStatus:'Charging', batteryCharging:true, timestamp:Date.now()
-  });
+  };
+  renderMudiStatus();
 }
 
 /* ===== 시간 ===== */
