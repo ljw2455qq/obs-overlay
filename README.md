@@ -8,10 +8,10 @@ GitHub Pages/OBS 브라우저 소스에서 이동거리, 수익, 날씨, 휴대�
 
 Mudi 7에서 상시 전송기를 설치하는 방법은 [`mudi7/README.md`](mudi7/README.md)를 따르세요. 전송기가 라우터에서 직접 실행되므로 서브폰의 Chrome이나 IRL 방송 시스템 화면을 닫아도 계속 갱신됩니다.
 
-메인 IRL 제어판에서 수동으로 입력한 값은 Firebase의 `mudiManual` 노드에 저장됩니다. `enabled: true`인 동안에는 수동 배터리·LTE/5G·신호 칸이 자동 `mudiSignal`보다 우선하며, 제어판에서 **자동 센서 사용**을 누르면 `enabled: false`가 저장되어 자동값으로 돌아갑니다. 수동값은 직접 해제할 때까지 유지되므로 오래되어도 회색으로 바뀌지 않습니다.
+메인 IRL 제어판에서 수동으로 입력한 배터리값은 Firebase의 `mudiBatteryManual` 노드에 저장됩니다. `enabled: true`인 동안에는 수동 배터리만 자동 `mudiSignal` 배터리보다 우선하며, LTE/5G 신호는 항상 라우터 자동값을 유지합니다. 제어판에서 **라우터 자동값**을 누르면 `enabled: false`가 저장되어 자동 배터리값으로 돌아갑니다. 수동값은 직접 해제할 때까지 유지되므로 오래되어도 회색으로 바뀌지 않습니다.
 
 ```json
-{"enabled":true,"batteryLevel":82,"batteryCharging":false,"connected":true,"rat":"5G","bars":3,"source":"irl-manual","timestamp":1787529600000}
+{"enabled":true,"batteryLevel":82,"batteryCharging":false,"connected":true,"batteryConnected":true,"source":"irl-manual","timestamp":1787529600000}
 ```
 
 - 자동 `mudiSignal`은 15초 동안 갱신되지 않으면 회색으로 표시합니다.
@@ -50,6 +50,8 @@ IRL 통합 제어 서버의 `.env`에 아래 값을 넣고 서버를 재시작�
 ```dotenv
 POWER_BANK_OVERLAY_FIREBASE_URL=https://YOUR_PROJECT-default-rtdb.firebaseio.com/ankerBattery.json
 POWER_BANK_OVERLAY_FIREBASE_AUTH_TOKEN=
+# 선택: 비워 두면 같은 DB의 mudiBatteryManual 노드를 자동 사용합니다.
+MUDI_BATTERY_OVERLAY_FIREBASE_URL=
 ```
 
 제어판에서 보조배터리 모델·현재 잔량·소비전력을 입력하고 `계산 시작/보정`을 누르면 10초마다 예상 상태가 전송됩니다. 외부 쓰기 요청은 패널 토큰으로 보호됩니다.
