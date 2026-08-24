@@ -255,8 +255,15 @@
     50%      { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
   }
 
-  /* ===== Power Bank (Firebase: ankerBattery) ===== */
-  .anker-container {
+  /* ===== Power Bank + Mudi 7 battery ===== */
+  .device-battery-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+  .anker-container,
+  .mudi-battery-container {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -264,13 +271,16 @@
     color: #ffffff;
     transition: opacity .25s ease, color .25s ease;
   }
-  .anker-label {
+  .anker-label,
+  .mudi-battery-label {
     font-size: 14px;
     font-weight: 700;
     letter-spacing: .08em;
     color: #8ec5ff;
   }
-  .anker-battery-icon {
+  .mudi-battery-label { color: #70e1c1; }
+  .anker-battery-icon,
+  .mudi-battery-icon {
     width: 34px;
     height: 17px;
     border: 1.5px solid rgba(255,255,255,.9);
@@ -280,7 +290,8 @@
     background: rgba(0,0,0,.3);
     flex: 0 0 auto;
   }
-  .anker-battery-icon::after {
+  .anker-battery-icon::after,
+  .mudi-battery-icon::after {
     content: '';
     position: absolute;
     right: -4px;
@@ -290,7 +301,8 @@
     border-radius: 1px;
     background: rgba(255,255,255,.9);
   }
-  #ankerFill {
+  #ankerFill,
+  #mudiBatteryFill {
     height: 100%;
     width: 0%;
     border-radius: 1px;
@@ -298,19 +310,30 @@
     box-shadow: 0 0 7px rgba(114,188,143,.75);
     transition: width .35s ease, background .25s ease, box-shadow .25s ease;
   }
-  #ankerLevel { min-width: 42px; font-size: 20px; font-weight: 600; }
+  #ankerLevel,
+  #mudiBatteryLevel { min-width: 42px; font-size: 20px; font-weight: 600; }
   .anker-meta { font-size: 17px; font-weight: 500; color: rgba(255,255,255,.86); }
   #ankerPower { min-width: 48px; }
-  .anker-container.warning #ankerFill { background:#de9255; box-shadow:0 0 8px rgba(222,146,85,.78); }
-  .anker-container.critical #ankerFill { background:#e97366; box-shadow:0 0 9px rgba(233,115,102,.9); }
-  .anker-container.stale { opacity:.55; }
-  .anker-container.offline { opacity:.48; }
-  .anker-container.offline .anker-label { color:rgba(255,255,255,.6); }
-  .anker-container.offline #ankerFill { width:0!important; box-shadow:none; background:#7d7a75; }
+  #mudiBatteryCharging { display:none; color:#ffd700; font-size:14px; line-height:1; }
+  .mudi-battery-container.charging #mudiBatteryFill { background:#49c6e5; box-shadow:0 0 8px rgba(73,198,229,.85); }
+  .anker-container.warning #ankerFill,
+  .mudi-battery-container.warning #mudiBatteryFill { background:#de9255; box-shadow:0 0 8px rgba(222,146,85,.78); }
+  .anker-container.critical #ankerFill,
+  .mudi-battery-container.critical #mudiBatteryFill { background:#e97366; box-shadow:0 0 9px rgba(233,115,102,.9); }
+  .anker-container.stale,
+  .mudi-battery-container.stale { opacity:.55; }
+  .anker-container.offline,
+  .mudi-battery-container.offline { opacity:.48; }
+  .anker-container.offline .anker-label,
+  .mudi-battery-container.offline .mudi-battery-label { color:rgba(255,255,255,.6); }
+  .anker-container.offline #ankerFill,
+  .mudi-battery-container.offline #mudiBatteryFill { width:0!important; box-shadow:none; background:#7d7a75; }
   @keyframes ankerCriticalPulse { 50% { opacity:.55; } }
-  .anker-container.critical #ankerLevel { color:#ff8b80; animation:ankerCriticalPulse 1.2s ease-in-out infinite; }
+  .anker-container.critical #ankerLevel,
+  .mudi-battery-container.critical #mudiBatteryLevel { color:#ff8b80; animation:ankerCriticalPulse 1.2s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) {
-    .anker-container.critical #ankerLevel { animation:none; }
+    .anker-container.critical #ankerLevel,
+    .mudi-battery-container.critical #mudiBatteryLevel { animation:none; }
   }
 
 </style>
@@ -372,12 +395,22 @@
 
   <span class="divider"></span>
 
-  <!-- Power Bank: IRL 서버/BLE 수집기 → Firebase ankerBattery -->
-  <div class="anker-container offline" id="ankerBattery" data-tooltip="보조배터리 상태">
-    <span class="anker-label" id="ankerModel">P</span>
-    <div class="anker-battery-icon" aria-hidden="true"><div id="ankerFill"></div></div>
-    <span id="ankerLevel">--%</span>
-    <span class="anker-meta" id="ankerPower">OFFLINE</span>
+  <div class="device-battery-group">
+    <!-- Power Bank: IRL 서버/BLE 수집기 → Firebase ankerBattery -->
+    <div class="anker-container offline" id="ankerBattery" data-tooltip="보조배터리 상태">
+      <span class="anker-label" id="ankerModel">P</span>
+      <div class="anker-battery-icon" aria-hidden="true"><div id="ankerFill"></div></div>
+      <span id="ankerLevel">--%</span>
+      <span class="anker-meta" id="ankerPower">OFFLINE</span>
+    </div>
+
+    <!-- Mudi 7 battery: router transmitter → Firebase mudiSignal -->
+    <div class="mudi-battery-container offline" id="mudiBattery" data-tooltip="MUDI7 배터리 상태">
+      <span class="mudi-battery-label">M</span>
+      <div class="mudi-battery-icon" aria-hidden="true"><div id="mudiBatteryFill"></div></div>
+      <span id="mudiBatteryLevel">--%</span>
+      <span id="mudiBatteryCharging" aria-label="충전 중">⚡</span>
+    </div>
   </div>
 
 </div>
@@ -772,6 +805,49 @@ function signalColor(level, stale) {
   if (level === 2) return '#ff9500';
   return '#ff3b30';
 }
+function setMudiBatteryOffline(message = 'OFFLINE') {
+  const root = document.getElementById('mudiBattery');
+  if (!root) return;
+  root.className = 'mudi-battery-container offline';
+  document.getElementById('mudiBatteryLevel').innerText = '--%';
+  document.getElementById('mudiBatteryFill').style.width = '0%';
+  document.getElementById('mudiBatteryCharging').style.display = 'none';
+  root.dataset.tooltip = `MUDI7 배터리: ${message}`;
+  scheduleAutoFit();
+}
+function updateMudiBattery(data) {
+  const level = signalNumOrNull(data?.batteryLevel);
+  const timestamp = signalNumOrNull(data?.timestamp) || 0;
+  const age = timestamp ? Date.now() - timestamp : Infinity;
+  const available = data?.batteryConnected !== false && level !== null;
+  const offline = !available || age >= MUDI_SIGNAL_OFFLINE_MS;
+  if (offline) return setMudiBatteryOffline(available ? 'OFFLINE' : '센서 확인 필요');
+
+  const root = document.getElementById('mudiBattery');
+  const stale = age >= MUDI_SIGNAL_STALE_MS;
+  const safeLevel = Math.max(0, Math.min(100, Math.round(level)));
+  const charging = data.batteryCharging === true;
+  let state = 'mudi-battery-container';
+  if (stale) state += ' stale';
+  if (charging) state += ' charging';
+  if (safeLevel <= 10) state += ' critical';
+  else if (safeLevel <= 20) state += ' warning';
+  root.className = state;
+  document.getElementById('mudiBatteryLevel').innerText = safeLevel + '%';
+  document.getElementById('mudiBatteryFill').style.width = safeLevel + '%';
+  document.getElementById('mudiBatteryCharging').style.display = charging ? 'inline' : 'none';
+
+  const rawStatus = String(data.batteryStatus || 'Unknown').trim().toLowerCase();
+  const statusLabels = {
+    charging: '충전 중',
+    discharging: '사용 중',
+    full: '완충',
+    'not charging': '충전 안 함',
+    unknown: '상태 확인 중'
+  };
+  root.dataset.tooltip = `MUDI7 배터리 ${safeLevel}% · ${statusLabels[rawStatus] || rawStatus.slice(0, 24)}${stale ? ' · 갱신 지연' : ''}`;
+  scheduleAutoFit();
+}
 function setMudiSignalOffline() {
   const root = document.getElementById('signal');
   document.getElementById('signalType').innerText = '--';
@@ -779,8 +855,12 @@ function setMudiSignalOffline() {
   root.dataset.tooltip = 'Mudi 7 신호: OFFLINE';
 }
 function updateMudiSignal(data) {
-  if (!data) return setMudiSignalOffline();
+  if (!data) {
+    setMudiBatteryOffline();
+    return setMudiSignalOffline();
+  }
   _lastMudiSignal = data;
+  updateMudiBattery(data);
 
   const root = document.getElementById('signal');
   const rsrp = signalNumOrNull(data.rsrp);
@@ -810,21 +890,25 @@ function updateMudiSignal(data) {
 
 if (db && !demoMode) {
   onValue(ref(db, MUDI_SIGNAL_PATH), (snapshot) => {
-    if (!snapshot.exists()) return setMudiSignalOffline();
+    if (!snapshot.exists()) return updateMudiSignal(null);
     updateMudiSignal(snapshot.val());
   }, (error) => {
     console.error('❌ Mudi 7 신호 로드 실패:', error);
-    setMudiSignalOffline();
+    updateMudiSignal(null);
   });
 } else if (!demoMode) {
-  setMudiSignalOffline();
+  updateMudiSignal(null);
 }
 if (!demoMode) {
   setInterval(() => { if (_lastMudiSignal) updateMudiSignal(_lastMudiSignal); }, 5000);
 }
 
 if (demoMode) {
-  updateMudiSignal({ rat:'5G', mode:'NR5G-SA', rsrp:-91, rsrq:-10, sinr:18, band:'n78', bars:3, connected:true, timestamp:Date.now() });
+  updateMudiSignal({
+    rat:'5G', mode:'NR5G-SA', rsrp:-91, rsrq:-10, sinr:18, band:'n78', bars:3,
+    connected:true, batteryConnected:true, batteryLevel:82,
+    batteryStatus:'Charging', batteryCharging:true, timestamp:Date.now()
+  });
 }
 
 /* ===== 시간 ===== */
