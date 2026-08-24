@@ -8,10 +8,10 @@ GitHub Pages/OBS 브라우저 소스에서 이동거리, 수익, 날씨, 휴대�
 
 Mudi 7에서 상시 전송기를 설치하는 방법은 [`mudi7/README.md`](mudi7/README.md)를 따르세요. 전송기가 라우터에서 직접 실행되므로 서브폰의 Chrome이나 IRL 방송 시스템 화면을 닫아도 계속 갱신됩니다.
 
-메인 IRL 제어판에서 수동으로 입력한 배터리값은 Firebase의 `mudiBatteryManual` 노드에 저장됩니다. `enabled: true`인 동안에는 수동 배터리만 자동 `mudiSignal` 배터리보다 우선하며, LTE/5G 신호는 항상 라우터 자동값을 유지합니다. `사용 중`으로 전송하면 입력한 `100% → 0% 예상시간`과 전송 시각을 기준으로 GitHub 오버레이가 잔량을 직접 계산하므로 IRL 서버가 꺼져도 계속 감소합니다. 서버를 다시 실행하면 Firebase의 마지막 상태를 현재 시각까지 진행시켜 자동 복원합니다. 제어판에서 **라우터 자동값**을 누르면 `enabled: false`가 저장되어 자동 배터리값으로 돌아갑니다.
+메인 IRL 제어판에서 수동으로 입력한 배터리값은 Firebase의 `mudiBatteryManual` 노드에 저장됩니다. `enabled: true`인 동안에는 수동 배터리만 자동 `mudiSignal` 배터리보다 우선하며, LTE/5G 신호는 항상 라우터 자동값을 유지합니다. 현재 잔량과 `방전까지 남은 시간`을 입력하고 **계산 시작/보정**을 누르면 GitHub 오버레이가 전송 시각부터 잔량을 직접 계산하므로 IRL 서버가 꺼져도 계속 감소합니다. 서버를 다시 실행하면 Firebase의 마지막 상태를 현재 시각까지 진행시켜 자동 복원합니다. 제어판에서 **라우터 자동값**을 누르면 `enabled: false`가 저장되어 자동 배터리값으로 돌아갑니다.
 
 ```json
-{"enabled":true,"batteryLevel":82,"batteryCharging":false,"connected":true,"batteryConnected":true,"fullRuntimeHours":13.5,"estimated":true,"running":true,"source":"irl-manual","timestamp":1787529600000}
+{"enabled":true,"batteryLevel":82,"batteryCharging":false,"connected":true,"batteryConnected":true,"remainingSeconds":18000,"estimated":true,"running":true,"source":"irl-manual","timestamp":1787529600000}
 ```
 
 - 자동 `mudiSignal`은 15초 동안 갱신되지 않으면 회색으로 표시합니다.
