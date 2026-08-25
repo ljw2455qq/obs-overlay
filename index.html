@@ -823,7 +823,6 @@ function estimatedMudiBatteryLevel(data, now = Date.now()) {
   if (
     data?.enabled !== true || data?.estimated !== true || data?.running !== true
     || data?.connected === false || data?.batteryConnected === false
-    || data?.batteryCharging === true
   ) return level;
   const runtimeHours = signalNumOrNull(data?.fullRuntimeHours);
   const timestamp = signalNumOrNull(data?.timestamp);
@@ -832,7 +831,13 @@ function estimatedMudiBatteryLevel(data, now = Date.now()) {
   const remainingSeconds = signalNumOrNull(data?.remainingSeconds);
   if (remainingSeconds !== null && remainingSeconds >= 0) {
     const ratio = remainingSeconds > 0 ? Math.max(0, remainingSeconds - elapsedSeconds) / remainingSeconds : 0;
-    return Math.max(0, level * ratio);
+    return data?.batteryCharging === true
+      ? Math.min(100, 100 - ((100 - level) * ratio))
+      : Math.max(0, level * ratio);
+  }
+  if (data?.batteryCharging === true) {
+    const fullChargeSeconds = signalNumOrNull(data?.fullChargeSeconds) || (100 * 60);
+    return Math.min(100, level + (elapsedSeconds * 100 / fullChargeSeconds));
   }
   if (runtimeHours === null || runtimeHours <= 0) return level;
   return Math.max(0, level - ((elapsedSeconds / 3600) * 100 / runtimeHours));
@@ -843,7 +848,6 @@ function estimatedMudiRemainingSeconds(data, now = Date.now()) {
   if (
     data?.enabled !== true || data?.estimated !== true || data?.running !== true
     || data?.connected === false || data?.batteryConnected === false
-    || data?.batteryCharging === true
   ) return Math.max(0, remainingSeconds);
   const timestamp = signalNumOrNull(data?.timestamp);
   if (timestamp === null || timestamp <= 0) return Math.max(0, remainingSeconds);
@@ -888,7 +892,7 @@ function updateMudiBattery(data, manual = false) {
     unknown: '상태 확인 중'
   };
   const remainingLabel = manual && data?.estimated === true
-    ? ` · 방전까지 ${formatMudiRemaining(estimatedMudiRemainingSeconds(data))}`
+    ? ` · ${data?.batteryCharging === true ? '완충' : '방전'}까지 ${formatMudiRemaining(estimatedMudiRemainingSeconds(data))}`
     : '';
   const estimateLabel = manual && data?.estimated === true && data?.running === true ? ' · 자동 계산' : '';
   root.dataset.tooltip = `MUDI7 배터리 ${displayLevel}% · ${statusLabels[rawStatus] || rawStatus.slice(0, 24)}${manual ? ' · 수동 입력' + estimateLabel + remainingLabel : (stale ? ' · 갱신 지연' : '')}`;
