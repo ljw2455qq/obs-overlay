@@ -837,6 +837,23 @@ function estimatedMudiBatteryLevel(data, now = Date.now()) {
   if (runtimeHours === null || runtimeHours <= 0) return level;
   return Math.max(0, level - ((elapsedSeconds / 3600) * 100 / runtimeHours));
 }
+function estimatedMudiRemainingSeconds(data, now = Date.now()) {
+  const remainingSeconds = signalNumOrNull(data?.remainingSeconds);
+  if (remainingSeconds === null) return null;
+  if (
+    data?.enabled !== true || data?.estimated !== true || data?.running !== true
+    || data?.connected === false || data?.batteryConnected === false
+    || data?.batteryCharging === true
+  ) return Math.max(0, remainingSeconds);
+  const timestamp = signalNumOrNull(data?.timestamp);
+  if (timestamp === null || timestamp <= 0) return Math.max(0, remainingSeconds);
+  return Math.max(0, remainingSeconds - (Math.max(0, now - timestamp) / 1000));
+}
+function formatMudiRemaining(seconds) {
+  if (!Number.isFinite(seconds)) return '';
+  const totalMinutes = Math.max(0, Math.ceil(seconds / 60));
+  return `${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분`;
+}
 function updateMudiBattery(data, manual = false) {
   const level = manual ? estimatedMudiBatteryLevel(data) : signalNumOrNull(data?.batteryLevel);
   const timestamp = signalNumOrNull(data?.timestamp) || 0;
@@ -847,7 +864,10 @@ function updateMudiBattery(data, manual = false) {
 
   const root = document.getElementById('mudiBattery');
   const stale = !manual && age >= MUDI_SIGNAL_STALE_MS;
-  const safeLevel = Math.max(0, Math.min(100, Math.round(level)));
+  const safeLevel = Math.max(0, Math.min(100, level));
+  const displayLevel = manual && data?.estimated === true
+    ? (Math.floor(safeLevel * 10) / 10).toFixed(1)
+    : String(Math.round(safeLevel));
   const charging = data.batteryCharging === true;
   let state = 'mudi-battery-container';
   if (stale) state += ' stale';
@@ -855,7 +875,7 @@ function updateMudiBattery(data, manual = false) {
   if (safeLevel <= 10) state += ' critical';
   else if (safeLevel <= 20) state += ' warning';
   root.className = state;
-  document.getElementById('mudiBatteryLevel').innerText = safeLevel + '%';
+  document.getElementById('mudiBatteryLevel').innerText = displayLevel + '%';
   document.getElementById('mudiBatteryFill').style.width = safeLevel + '%';
   document.getElementById('mudiBatteryCharging').style.display = charging ? 'inline' : 'none';
 
@@ -867,8 +887,11 @@ function updateMudiBattery(data, manual = false) {
     'not charging': '충전 안 함',
     unknown: '상태 확인 중'
   };
+  const remainingLabel = manual && data?.estimated === true
+    ? ` · 방전까지 ${formatMudiRemaining(estimatedMudiRemainingSeconds(data))}`
+    : '';
   const estimateLabel = manual && data?.estimated === true && data?.running === true ? ' · 자동 계산' : '';
-  root.dataset.tooltip = `MUDI7 배터리 ${safeLevel}% · ${statusLabels[rawStatus] || rawStatus.slice(0, 24)}${manual ? ' · 수동 입력' + estimateLabel : (stale ? ' · 갱신 지연' : '')}`;
+  root.dataset.tooltip = `MUDI7 배터리 ${displayLevel}% · ${statusLabels[rawStatus] || rawStatus.slice(0, 24)}${manual ? ' · 수동 입력' + estimateLabel + remainingLabel : (stale ? ' · 갱신 지연' : '')}`;
   scheduleAutoFit();
 }
 function setMudiSignalOffline() {
