@@ -664,9 +664,10 @@ function updateAnkerBattery(data) {
   else if (level !== null && level <= 20) state += ' warning';
   root.className = state;
 
-  const safeLevel = level === null ? null : Math.max(0, Math.min(100, Math.round(level)));
+  const safeLevel = level === null ? null : Math.round(Math.max(0, Math.min(100, level)) * 10) / 10;
+  const displayLevel = safeLevel === null ? '--%' : safeLevel.toFixed(1) + '%';
   document.getElementById('ankerModel').innerText = 'P';
-  document.getElementById('ankerLevel').innerText = safeLevel === null ? '--%' : safeLevel + '%';
+  document.getElementById('ankerLevel').innerText = displayLevel;
   document.getElementById('ankerFill').style.width = (unavailable || safeLevel === null) ? '0%' : safeLevel + '%';
 
   let powerText = 'IDLE';
